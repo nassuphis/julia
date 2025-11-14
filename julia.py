@@ -1,10 +1,11 @@
 import sys
+sys.path.insert(0, "/Users/nicknassuphis/specparser")
 import math
 import numpy as np
 from numba import njit, prange, types, complex128, int32, float64
 import argparse
-import specparser
-import expandspec
+from specparser import specparser
+from specparser import expandspec
 import galaxy_raster
 import json
 import cv2
