@@ -1,3 +1,14 @@
+# images
+*.png
+
+# iRnw stuff
+*.tex
+*.log
+*.toc
+*.out
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

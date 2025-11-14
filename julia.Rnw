@@ -1,0 +1,236 @@
+\documentclass{article}
+\usepackage[portrait, headheight = 0cm, margin=0.25cm, top = 0.25cm]{geometry} 
+\usepackage{graphicx}
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{pdfpages}
+\usepackage[export]{adjustbox} 
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{shadings,arrows.meta,positioning,calc,intersections}
+\usepackage{hyperref}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  frame=single,
+  columns=fullflexible,
+  keepspaces=true
+}
+\usepackage{array} % ensure m{} columns work
+\usepackage{enumitem}  % to control list spacing
+<<setup, include=FALSE>>=
+run_code <- FALSE   # or FALSE to disable execution
+@
+
+<<, engine='bash', eval=run_code, include=FALSE>>=
+python julia.py \
+--spec 'n:1e7,eqn:n,c:0.01797+0.04313j,w:w,maxi:iter' \
+--pix 5000   --out julia_img1.png --show-specs  \
+--margin 0.05 --const n=14 --const w=0.5 --const iter=50 --clip
+@
+
+\title{
+\vskip 1cm
+{\bf\huge Julia Sets}
+\vskip 3cm
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img1.png}
+\end{center}
+\vskip 1cm
+}
+\author{Wigerich}
+
+\begin{document}
+\maketitle
+
+\newpage
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt equation 14}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:3e7,eqn:n,c:0.003044+0.048215j,w:w,maxi:iter' \
+--pix 5000   --out julia_img2.png --margin 0.1 \
+--const n=14 --const w=2 --const iter=50 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img2.png}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt equation 8}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:3e7,eqn:n,c:-0.038629-0.007556j,w:w,maxi:iter' \
+--pix 5000   --out julia_img3.png --margin 0.1 \
+--const n=8 --const w=2 --const iter=50 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img3.png}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt equation 0}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:5e6,eqn:n,c:-0.348054-0.624830j,w:w,maxi:iter' \
+--pix 5000 --out julia_img4.png --margin 0.1 \
+--const n=0 --const w=20 --const iter=400 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img4.png}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt equation 5}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:5e6,eqn:n,c:+0.100892+0.383899j,w:w,maxi:iter' \
+--pix 5000 --out julia_img5.png --margin 0.05 --clip \
+--const n=5 --const w=10 --const iter=400 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img5.png}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt equation 12}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:5e6,eqn:n,c:+0.950229+0.258774j,w:w,maxi:iter' \
+--pix 5000 --out julia_img6.png --margin 0.1 \
+--const n=12 --const w=2 --const iter=400 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img6.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 11}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:5e6,eqn:n,c:-0.319390+0.104089j,w:w,maxi:iter' \
+--pix 5000 --out julia_img7.png --margin 0.05 \
+--const n=11 --const w=0.25 --const iter=400 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img7.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 16}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:5e6,eqn:n,c:+0.211542+0.070463j,w:w,maxi:iter' \
+--pix 5000 --out julia_img8.png --margin 0.05 \
+--const n=16 --const w=2 --const iter=400 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img8.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 12}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:5e6,eqn:n,c:+0.998155+0.248836j,w:w,maxi:iter' \
+--pix 5000 --out julia_img9.png --margin 0.05 \
+--const n=12 --const w=2 --const iter=400 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img9.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 15}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:5e6,eqn:n,c:-0.048062+0.561896j,w:w,maxi:iter' \
+--pix 5000 --out julia_img10.png --margin 0.05 \
+--const n=15 --const w=2 --const iter=400 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img10.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 1}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:5e6,eqn:n,c:-0.66658+0.720689j,w:w,maxi:iter' \
+--pix 5000 --out julia_img11.png --margin 0.05 \
+--const n=1 --const w=50 --const iter=400 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_img11.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 3 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.40,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test2.png --margin 0.05 --const eqn=3 --const w=0.5 --const iter=50 
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test2thumb.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 5 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.05,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test5.png --margin 0.05 --const eqn=5 --const w=1.5 --const iter=50 --thumb 5000
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test5.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 6 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.05,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test5.png --margin 0.05 --const eqn=6 --const w=1.5 --const iter=50 --thumb 5000
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test6.png}
+\end{center}
+
+
+\end{document}
