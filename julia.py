@@ -1,12 +1,12 @@
 import sys
-sys.path.insert(0, "/Users/nicknassuphis/specparser")
+sys.path.insert(0, "/Users/nicknassuphis")
 import math
 import numpy as np
 from numba import njit, prange, types, complex128, int32, float64
 import argparse
 from specparser import specparser
 from specparser import expandspec
-import galaxy_raster
+from rasterizer import raster
 import json
 import cv2
 
@@ -388,7 +388,7 @@ if __name__ == "__main__":
             z = z[z.real>(minx+0.1*ptpx)]
             z = z[z.imag>(miny+0.1*ptpy)]
             z = z-np.mean(z)
-        canvas = galaxy_raster.render_to_canvas(z, args.pix, args.margin)
+        canvas = raster.render_to_canvas(z, args.pix, args.margin)
         canvases.append(canvas)
         titles.append(f"{d['spec']} | eqn:{int(d['eqn'][0].real)} | w:{round(d['w'][0].real,2)} | maxi:{int(d['maxi'][0].real)}")
     
@@ -402,7 +402,7 @@ if __name__ == "__main__":
     else: 
         cols = max(1, int(round(math.sqrt(n))))
 
-    galaxy_raster.save_mosaic_png_bilevel(
+    raster.save_mosaic_png_bilevel(
         tiles= canvases, 
         titles=titles,
         cols=cols, 

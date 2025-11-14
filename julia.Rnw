@@ -216,6 +216,7 @@ python julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.40,w,iter)},
 <<, engine='bash', echo=TRUE, eval=run_code>>=
 julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.05,w,iter)},w:w,maxi:iter' \
 --pix 5000 --out julia_test5.png --margin 0.05 --const eqn=5 --const w=1.5 --const iter=50 --thumb 5000
+@ 
 
 \begin{center}
 \includegraphics[width=15cm, height=15cm]{julia_test5.png}
@@ -227,6 +228,7 @@ julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.05,w,iter)},w:w,max
 <<, engine='bash', echo=TRUE, eval=run_code>>=
 julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.05,w,iter)},w:w,maxi:iter' \
 --pix 5000 --out julia_test5.png --margin 0.05 --const eqn=6 --const w=1.5 --const iter=50 --thumb 5000
+@ 
 
 \begin{center}
 \includegraphics[width=15cm, height=15cm]{julia_test6.png}

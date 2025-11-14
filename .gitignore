@@ -1,11 +1,12 @@
 # images
 *.png
 
-# iRnw stuff
+# Rnw stuff
 *.tex
 *.log
 *.toc
 *.out
+*.pdf
 
 
 
