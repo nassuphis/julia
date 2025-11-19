@@ -26,10 +26,60 @@ def _points(N,w:float=1,center:complex=0+0j):
     im = -w + 2 * w * np.random.rand(N)
     return re + 1j*im + center
 
+@njit("complex128(complex128[:], complex128)",cache=True, fastmath=True)
+def _horner(cf: np.ndarray, z: complex):
+    n = cf.size - 1
+    p = cf[0]
+    dp = 0.0 + 0.0j
+    for k in range(1, n + 1):
+        p = p * z + cf[k]
+    return p
+
+@njit("complex128[:](complex128)",cache=True, fastmath=True)
+def g5(c):
+    t1 = np.exp(1j*2*np.pi*c.real)
+    t2 = np.exp(1j*2*np.pi*c.imag)
+    cf = np.zeros(25, dtype=np.complex128)
+    cf[0]  = 1.0 + 0j 
+    cf[4]  = 4.0 + 0j
+    cf[12] = 4.0 + 0j 
+    cf[19] = -9 + 0j
+    cf[20] = -1.9 + 0j
+    cf[24] = 0.2 + 0j
+    cf[6] = 100j * t2**3 + 100j * t2**2 - 100j * t2 - 100j
+    cf[8] = 100j * t1**3 + 100j * t1**2 + 100j * t2 - 100j
+    cf[14] = 100j * t2**3 - 100j * t2**2 + 100j * t2 - 100j
+    return cf
+
+
+@njit("complex128[:](complex128)",cache=True, fastmath=True)
+def g1(c):
+    t1 = np.exp(1j*2*np.pi*c.real)
+    t2 = np.exp(1j*2*np.pi*c.imag)
+    cf = np.zeros(25, dtype=np.complex128)
+    cf[0] = 30 * (t1**2 * t2)
+    cf[1] = 30 * (t1 * t2**2)
+    cf[2] = 40 * (t1**3)
+    cf[3] = 40 * (t2**3)
+    cf[4] = -25 * (t1**2)
+    cf[5] = -25 * (t2**2)
+    cf[6] = 10 * (t1 * t2)
+    cf[9] = 100 * (t1**4 * t2**4)
+    cf[11] = -5 * t1
+    cf[13] = 5 * t2
+    cf[24] = -10
+    return cf
+
+@njit("complex128[:](complex128)",cache=True, fastmath=True)
+def p150(c):
+    t1 = np.exp(1j*2*np.pi*c.real)
+    t2 = np.exp(1j*2*np.pi*c.imag)
+    j = np.arange(0, 71)
+    cf = (t1 + j * t2) * (-1)**j * np.log(np.abs(t1) + np.abs(t2) + 1)**(np.abs(j) % 5 + 1) * (j + 1)
+    return cf.astype(np.complex128)
 
 @njit("complex128(complex128, complex128, int32)", fastmath=True, cache=True)
 def julia_equation(z: np.complex128, c:np.complex128, eqn:np.int32):
-    z=z
     if eqn==0:
         return z*z*z*z*z*z - z*z*z*z + c
     elif eqn==1:
@@ -109,10 +159,18 @@ def julia_equation(z: np.complex128, c:np.complex128, eqn:np.int32):
     elif eqn==21:
         z =  z*z + c*z*np.exp(1j*2*np.pi*np.abs(z)) 
     elif eqn==22:
-        znew=0
+        cf = g5(c)
+        z = _horner(cf,z)
+    elif eqn==23:
         for i in range(10):
-            znew += z*z + c*z*np.exp(1j*2*np.pi*np.abs(z))    
-        z=znew/10
+            z = (z+c)*z
+    elif eqn==24:
+        for i in range(10):
+            z = (z+c)*((i+1)*z)
+    elif eqn==25:
+            z = z+(z*z*z*z+c)*np.exp(c*z)
+    elif eqn==26:
+            z = z*z+c*np.exp(c*z*z)
     return z
     
 
@@ -129,6 +187,15 @@ def _julia_escape_single(
         z = julia_equation(z,c,eqn)
         if (z.real*z.real + z.imag*z.imag) > bailout2: return k
     return max_iter
+
+@njit("int32(complex128, complex128[:], int32, int32, float64)",fastmath=True, cache=True)
+def _count_max_iter(c, zs, eqn, max_iter, bailout2):
+    cnt = 0
+    for j in range(zs.size):
+        it = _julia_escape_single(zs[j], c, eqn, max_iter, bailout2)
+        if it == max_iter:
+            cnt += 1
+    return cnt
 
 # vectorized, parallel caller
 @njit("int32[:](complex128[:], complex128, int32, int32, float64)",
@@ -161,17 +228,60 @@ def julia_sample(N, c, w, center, thresh, eqn):
 # C sampler
 #=========================================
 
-@njit("complex128[:](int64, float64, float64, float64, int32, int32)", fastmath=True, cache=True)
-def c_sampler(N:int, lo:np.int64, hi:np.float64, w:np.float64, eqn:np.int32, max_iter:np.int32 = 400)-> np.ndarray:
-    cs = _points(N,w,0)
-    zs = _points(1000,w,0)
-    pct_max = np.full(cs.size,0,dtype=np.float64)
-    for i, c in enumerate(cs):
-        escape_iter = julia_escape_vec(zs,c,eqn,max_iter,4.0)
-        pct_max[i] = np.sum(escape_iter==max_iter)/zs.size
-    passed = (pct_max>lo) & (pct_max<hi)
+# return c's that have % maxiter in range
+@njit("complex128[:](int64, float64, float64, float64, int32, int32)",fastmath=True, cache=True, parallel=True)
+def c_sampler(N, lo, hi, w, eqn, max_iter):
+    cs = _points(N, w, 0.0)       # complex128[:]
+    zs = _points(1000, w, 0.0)    # complex128[:]
+    pct_max = np.empty(cs.size, dtype=np.float64)
+    for i in prange(cs.size):
+        c = cs[i]
+        cnt = _count_max_iter(c, zs, eqn, max_iter, 4.0)
+        pct_max[i] = cnt / zs.size
+    passed = (pct_max >= lo) & (pct_max <= hi)
     return cs[passed]
 
+def c_sampler_python(N, lo, hi, w, eqn, max_iter):
+    try:
+        cs = _points(N, w, 0.0)       # complex128[:]
+        zs = _points(1000, 0.5, 0.0)    # complex128[:]
+        pct_max = np.empty(cs.size, dtype=np.float64)
+        imax = np.empty(cs.size, dtype=np.int32)
+        imin = np.empty(cs.size, dtype=np.int32)
+        for i in range(cs.size):
+            c = cs[i]
+            escape = julia_escape_vec(zs, c, eqn, max_iter, 1e5)
+            cnt = np.sum(escape==max_iter)
+            pct_max[i] = cnt / zs.size
+            imax[i]=np.max(escape)
+            imin[i]=np.min(escape)
+        print(f"pct min:{np.min(pct_max)} pct max:{np.max(pct_max)} imax min{np.min(imax)} imax min{np.max(imax)}")
+        passed = (pct_max >= lo) & (pct_max <= hi)
+        return cs[passed]
+    except Exception as e:
+        print(f"[c_sampler ERROR] {type(e).__name__}: {e}")
+        raise
+
+
+@njit("complex128[:](int64, float64, float64, float64, int32, int32)",
+      fastmath=True, cache=True, parallel=True)
+def c_sampler_broken(N, lo, hi, w, eqn, max_iter=400):
+    cs = _points(N, w, 0.0)
+    zs = _points(1000, w, 0.0)
+
+    pct_max = np.empty(cs.size, dtype=np.float64)
+
+    for i in prange(cs.size):
+        c = cs[i]
+        escape_iter = julia_escape_vec(zs, c, eqn, max_iter, 4.0)
+        cnt = 0
+        for k in range(escape_iter.size):
+            if escape_iter[k] == max_iter:
+                cnt += 1
+        pct_max[i] = cnt / escape_iter.size
+
+    passed = (pct_max > lo) & (pct_max < hi)
+    return cs[passed]
 
 #=========================================
 #
@@ -245,7 +355,7 @@ def jsample(
         max_rounds,
         eqn, 
         bottom: float = 0.05, 
-        top: float = 0.05, 
+        top: float = 0.10, 
         w:float=1.0, 
         iter: int = 400
     ):
@@ -255,7 +365,7 @@ def jsample(
     top = complex(top).real
     w = complex(w).real
     iter = int(complex(iter).real)
-    batch = 500
+    batch = 1000
     out = []
     rounds = 0
     wasted = 0
@@ -263,15 +373,16 @@ def jsample(
         print(f"jsample round {rounds} sampling: {batch}: have {len(out)}, width {w} bottom {bottom} top {top}")
         rounds += 1
         s = np.asarray(c_sampler(batch, bottom, top, w, np.int32(eqn), iter))
+        print(f"sample size: {s.size}")
         if s.size == 0: 
             wasted += 1
             if wasted>0.1*max_rounds:
-                w=w*2
+                #w=w*2
                 batch=batch*1.25
                 wasted=0
                 max_rounds+=5
-                bottom = 0.0 * 0.25 + bottom * (1-0.25)
-                top = top * 0.75 + 1.0 * (1-0.75)
+                #bottom = 0.0 * 0.01 + bottom * (1-0.99)
+                #top = top * 0.99 + 1.0 * (1-0.99)
             continue
         need = N - len(out)
         keep = min(need, s.size)
@@ -279,47 +390,6 @@ def jsample(
     print(f"jsample round {rounds}: have {len(out)}")
     return [f"{z.real:+.5f}{z.imag:+.5f}j" for z in out]
 
-def julia0(N):
-    samples = c_sampler(10000,0.01,0.05,1.0,0,200)
-    samples = samples[:min(samples.size,N)]
-    waypoints=[f"{z.real:+5f}{z.imag:+5f}j" for z in samples ]
-    return waypoints
-
-def julia1(N):
-    samples = c_sampler(10000,0.01,0.05,1.0,1,200)
-    samples = samples[:min(samples.size,N)]
-    waypoints=[f"{z.real:+5f}{z.imag:+5f}j" for z in samples ]
-    return waypoints
-
-def julia2(N):
-    samples = c_sampler(10000,0.01,0.05,1.0,2,200)
-    samples = samples[:min(samples.size,N)]
-    waypoints=[f"{z.real:+5f}{z.imag:+5f}j" for z in samples ]
-    return waypoints
-
-def julia3(N):
-    samples = c_sampler(10000,0.01,0.05,1.0,3,200)
-    samples = samples[:min(samples.size,N)]
-    waypoints=[f"{z.real:+5f}{z.imag:+5f}j" for z in samples ]
-    return waypoints
-
-def julia4(N):
-    samples = c_sampler(10000,0.01,0.05,1.0,4,200)
-    samples = samples[:min(samples.size,N)]
-    waypoints=[f"{z.real:+5f}{z.imag:+5f}j" for z in samples ]
-    return waypoints
-
-def julia5(N):
-    samples = c_sampler(10000,0.01,0.05,1.0,5,200)
-    samples = samples[:min(samples.size,N)]
-    waypoints=[f"{z.real:+5f}{z.imag:+5f}j" for z in samples ]
-    return waypoints
-
-def julia6(N):
-    samples = c_sampler(10000,0.01,0.05,1.0,6,200)
-    samples = samples[:min(samples.size,N)]
-    waypoints=[f"{z.real:+5f}{z.imag:+5f}j" for z in samples ]
-    return waypoints
 
 #=========================================
 # "interesting" image classification
@@ -337,6 +407,8 @@ if __name__ == "__main__":
     p.add_argument("--margin", type=float, default=0.0, help="Logical margin fraction around geometry")
     p.add_argument("--thumb",type=int, default=None,  help="Save thumbnail")
     p.add_argument("--clip",action="store_true", help="Clip julia samples")
+    p.add_argument("--center",action="store_true", help="Center julia samples")
+    p.add_argument("--add",type=complex, default=0+0j,help="Add to samples")
     p.add_argument("--const", action="append", default=[],help="Add/override NAME=VALUE."
     )
     args = p.parse_args()
@@ -347,14 +419,10 @@ if __name__ == "__main__":
         specparser.set_const(k, v)
         expandspec.set_const(k, v)
 
+    pngfile = expandspec.expand_cartesian_lists(args.out)[0]
+    print(f"will save to {pngfile}")
+
     expandspec.FUNCS["jsample"]=jsample
-    expandspec.FUNCS["julia0"]=julia0
-    expandspec.FUNCS["julia1"]=julia1
-    expandspec.FUNCS["julia2"]=julia2
-    expandspec.FUNCS["julia3"]=julia3
-    expandspec.FUNCS["julia4"]=julia4
-    expandspec.FUNCS["julia5"]=julia5
-    expandspec.FUNCS["julia6"]=julia6
 
     specs = expandspec.expand_cartesian_lists(args.spec)
    
@@ -375,6 +443,8 @@ if __name__ == "__main__":
     for i,d in enumerate(dicts,start=1):
         print(f"{i}/{len(dicts)} Rendering {d['spec']}")
         z = dict2julia(d)
+        if args.center:
+            z = z-np.mean(z)
         if args.clip:
             z = z-np.mean(z)
             minx = np.min(z.real)
@@ -388,9 +458,10 @@ if __name__ == "__main__":
             z = z[z.real>(minx+0.1*ptpx)]
             z = z[z.imag>(miny+0.1*ptpy)]
             z = z-np.mean(z)
+        z=z+args.add
         canvas = raster.render_to_canvas(z, args.pix, args.margin)
         canvases.append(canvas)
-        titles.append(f"{d['spec']} | eqn:{int(d['eqn'][0].real)} | w:{round(d['w'][0].real,2)} | maxi:{int(d['maxi'][0].real)}")
+        titles.append(f"eqn:{int(d['eqn'][0].real)} | c:{d['c'][0]} | w:{round(d['w'][0].real,2)} | maxi:{int(d['maxi'][0].real)}")
     
 
     n = len(canvases)
@@ -407,11 +478,11 @@ if __name__ == "__main__":
         titles=titles,
         cols=cols, 
         gap=20,
-        out_path=args.out, 
+        out_path=pngfile, 
         invert=args.invert,
         thumbnail=args.thumb,
     )
 
-    print(f"saved: {args.out}")
+    print(f"saved: {pngfile}")
 
 

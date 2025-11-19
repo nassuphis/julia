@@ -227,12 +227,170 @@ julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.05,w,iter)},w:w,max
 
 <<, engine='bash', echo=TRUE, eval=run_code>>=
 julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.05,w,iter)},w:w,maxi:iter' \
---pix 5000 --out julia_test5.png --margin 0.05 --const eqn=6 --const w=1.5 --const iter=50 --thumb 5000
+--pix 5000 --out julia_test9.png --margin 0.05 --const eqn=6 --const w=1.5 --const iter=50 --thumb 5000
 @ 
 
 \begin{center}
 \includegraphics[width=15cm, height=15cm]{julia_test6.png}
 \end{center}
 
+\newpage
+\section{{\tt equation 9 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.05,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test9.png --margin 0.05 --const eqn=9 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test9.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 9 example}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+ python julia.py --spec 'n:5e6,eqn:eqn,c:-0.02553+0.05908j,w:w,maxi:iter' \
+ --pix 5000 --out julia_eqn9_1.png --margin 0.1 --const eqn=9 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_eqn9_1.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 10 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.1,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test10.png --margin 0.05 --const eqn=10 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test10.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 11 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.1,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test11.png --margin 0.05 --const eqn=11 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test11.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 12 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.1,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test12.png --margin 0.05 --const eqn=12 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test12.png}
+\end{center}
+
+
+\newpage
+\section{{\tt equation 13 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.1,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test13.png --margin 0.05 --const eqn=13 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test13.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 14 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.1,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test14.png --margin 0.05 --const eqn=14 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test14.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 15 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.3,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test15.png --margin 0.05 --const eqn=15 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test15.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 16 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.3,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test16.png --margin 0.05 --const eqn=16 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test16.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 17 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.3,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test17.png --margin 0.05 --const eqn=17 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test17.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 18 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+julia.py --spec 'n:5e6,eqn:eqn,c:${jsample(16,50,eqn,0.001,0.3,w,iter)},w:w,maxi:iter' \
+--pix 5000 --out julia_test18.png --margin 0.05 --const eqn=18 --const w=1.5 --const iter=50 --thumb 5000
+@ 
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test18.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 25 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:1e6,eqn:eqn,c:${jsample(16,100,eqn,0.000001,0.01,w,iter)},w:w,maxi:iter' \
+--pix 2000 --out julia_test24.png --margin 0.1 --const eqn=25 --const w=2 --const iter=150 --thumb 5000
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test24.png}
+\end{center}
+
+\newpage
+\section{{\tt equation 26 sample}}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python julia.py \
+--spec 'n:1e6,eqn:eqn,c:${jsample(16,100,eqn,0.000001,0.01,w,iter)},w:w,maxi:iter' \
+--pix 2000 --out julia_test26.png --margin 0.1 --const eqn=26 --const w=2 --const iter=150 --thumb 5000
+@
+
+\begin{center}
+\includegraphics[width=15cm, height=15cm]{julia_test26.png}
+\end{center}
 
 \end{document}
