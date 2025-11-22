@@ -27,18 +27,16 @@ just:
 
 import sys
 sys.path.insert(0, "/Users/nicknassuphis")
-
+import time
 import math
 import argparse
 import re as regex
-
 import numpy as np
 import sympy as sp
 from numba import njit, types, prange
 
 from specparser import specparser, expandspec
 from rasterizer import raster
-import time
 
 # ---------------------------------------------------------------------------
 # Global defaults
@@ -761,14 +759,27 @@ MAP_TEMPLATES: dict[str, dict] = {
     ),
 
     "henzi": dict( #henon-lozi map
+        # fig 9.11 :  henzi:BA,ll:1.483:2.35,ul:2.15:1.794,lr:-0.35:0.15,gamma:0.25
         dim=2,
-        forcing="ab",   # <--- new flag so spec2lyapunov knows to use the AB kernel
+        forcing="ab",   
+        # FIXME: classification needs a single string
+        # something like "1D", "2D", "2Dab" 
+        # FIXME: add a default "seq" key
+        # seq="AB" or somthing
         expr_x="1-r*abs(x)+y",
         expr_y="a*x",
+        # FIXME: add a sub_expr dictionary that is 
+        # expanded into the formula prior to scypy
+        # things inside [...] are looked up 
+        # and replaced [xpr1]+ [xpr2]
+        # sub_expr={'xpr1':'a+b+c', 'xpr2':'abs(x+b)'}
         domain=[-10,-10,10,10],
         params=[0.994,0.0, 0.0, 0.0],
+        #FIXME: add pnames=["a","b","c","d"] so formuli can match source
         x0 = 0.4,
         y0 = 0.4,
+        # FIXME: make this a list init=[0.4,0.4]
+        # so the values can be specced like init:0.4:0.4
         trans = 100,
         iter = 200,
     ),
@@ -788,8 +799,11 @@ MAP_TEMPLATES: dict[str, dict] = {
 
     "degn": dict( #degn's map
         dim=2,  
-        expr_x="r*(x-0.5)+0.5+a*sin(2*pi*s*y)",
-        expr_y="(y+r*(x-0.5)+0.5+a*sin(2*pi*s*y)*mod1(b/r))",
+        # text is "b vs r"
+        # s is the LHS of the text 
+        # r is the RHS of the text
+        expr_x="s*(x-0.5)+0.5+a*sin(2*pi*r*y)",
+        expr_y="(y+s*(x-0.5)+0.5+a*sin(2*pi*r*y)*mod1(b/s))",
         domain=[-2,-5,2,5],
         params=[0.1,1.0, 0.0, 0.0],
         x0 = 0.4,
@@ -845,8 +859,10 @@ MAP_TEMPLATES: dict[str, dict] = {
 
     "logistic2d": dict(
         dim=2,
-        # (x, y) -> (x', y'), using r,s as axis parameters
-        expr_x="(1-r*pow(abs(x),a))*step(x)+(s-r*pow(abs(x),a))*(1-step(x))",  # Henon-like
+        # text is "r vs a"
+        # s is the LHS of the text 
+        # r is the RHS of the text
+        expr_x="(1-s*x*x)*step(x)+(r-s*x*x)*(1-step(x))",  # Henon-like
         expr_y="0",
         domain=[0.66,-0.05,3,1.66],  # r0,s0,r1,s1
         params=[2, 0.0, 0.0, 0.0],
@@ -1054,7 +1070,7 @@ MAP_TEMPLATES: dict[str, dict] = {
     ),
 
     "eq95": dict(
-        expr=" (1-r*apow(x,b))*step(x)+(a-r*apow(x,c))*(1-step(x))",
+        expr=" (1-r*x*x)*step(x)+(a-r*x*x)*(1-step(x))",
         # A8B8
         domain=[-0.5,-0.5,5,5],
         params=[2,2,2,0],
@@ -1567,16 +1583,24 @@ def _seq_to_array(seq_str: str) -> np.ndarray:
 # Low-level Lyapunov field (generic, map passed as function)
 # ---------------------------------------------------------------------------
 
+@njit(cache=False, fastmath=False)
+def map_logical_to_physical(domain, u, v):
+    llx, lly, ulx, uly, lrx, lry = domain
+    ex = lrx - llx
+    ey = lry - lly
+    fx = ulx - llx
+    fy = uly - lly
+    A = llx + u*ex + v*fx
+    B = lly + u*ey + v*fy
+    return A, B
+
 @njit(cache=False, fastmath=False, parallel=True)
 def _lyapunov_field_generic(
     step,
     deriv,
     seq,
     pix,
-    a0,
-    a1,
-    b0,
-    b1,
+    domain,         # <- 1D float64 array: [llx, lly, ulx, uly, lrx, lry]
     x0,
     n_transient,
     n_iter,
@@ -1584,34 +1608,46 @@ def _lyapunov_field_generic(
     params,
 ):
     """
-    Generic λ-field for a 1‑D map:
+    Generic λ-field for a 1‑D map with A/B forcing, over an arbitrary
+    parallelogram in (A,B):
 
-        x_{n+1} = step(x_n, r_n, params)
-        λ  ~  <log |∂x_{n+1}/∂x_n|>
+        (u,v) in [0,1]^2   (logical)
+        (A,B) = LL + u (LR-LL) + v (UL-LL)
 
-    where r_n alternates between A and B according to `seq`.
+    where A,B are the two parameter values used in the A/B sequence.
     """
     seq_len = seq.size
     out = np.empty((pix, pix), dtype=np.float64)
 
+
+    denom = 1.0 if pix <= 1 else (pix - 1.0)
+
     for j in prange(pix):
-        bj = b0 + (b1 - b0) * (j / (pix - 1.0))
+        v = j / denom
         for i in range(pix):
-            ai = a0 + (a1 - a0) * (i / (pix - 1.0))
+            u = i / denom
+
+            # Logical -> physical mapping
+            Ai, Bj = map_logical_to_physical(domain, u, v)
+
             x = x0
             acc = 0.0
+
             for n in range(n_transient + n_iter):
-                s = seq[n % seq_len]
-                r = ai if s == 0 else bj
+                s_idx = seq[n % seq_len]
+                r = Ai if s_idx == 0 else Bj
+
                 d = deriv(x, r, params)
                 x = step(x, r, params)
                 if not np.isfinite(x):
                     x = 0.5
+
                 if n >= n_transient:
                     ad = abs(d)
                     if (not np.isfinite(ad)) or ad < eps:
                         ad = eps
                     acc += math.log(ad)
+
             out[j, i] = acc / float(n_iter)
 
     return out
@@ -1621,10 +1657,7 @@ def _lyapunov_field_generic_2d(
     step2,
     jac2,
     pix,
-    r0,
-    r1,
-    s0,
-    s1,
+    domain,        # [llx, lly, ulx, uly, lrx, lry] in (r,s)-plane
     x0,
     y0,
     n_transient,
@@ -1633,50 +1666,46 @@ def _lyapunov_field_generic_2d(
     params,
 ):
     """
-    Generic λ-field for a 2‑D map:
+    Generic λ-field for a 2‑D map over an arbitrary parallelogram in the
+    (r,s) parameter plane.
 
-        (x_{n+1}, y_{n+1}) = step2(x_n, y_n, r, s, params)
-
-    Largest Lyapunov exponent via tangent vector propagation.
+        (u,v) in [0,1]^2
+        (r,s) = LL + u (LR-LL) + v (UL-LL)
     """
     out = np.empty((pix, pix), dtype=np.float64)
 
     if eps_floor <= 0.0:
-        eps_floor = 1e-16   # matches all your original 2‑D kernels
+        eps_floor = 1e-16
 
+    denom = 1.0 if pix <= 1 else (pix - 1.0)
 
     for j in prange(pix):
-        sj = s0 + (s1 - s0) * (j / (pix - 1.0))
+        v = j / denom
         for i in range(pix):
-            ri = r0 + (r1 - r0) * (i / (pix - 1.0))
+            u = i / denom
+
+            r,s = map_logical_to_physical(domain, u, v)
 
             x = x0
             y = y0
-
             vx = 1.0
             vy = 0.0
             acc = 0.0
 
             for n in range(n_transient + n_iter):
+                x_next, y_next = step2(x, y, r, s, params)
 
-                # --- 1) map step: does its own error handling ---
-                x_next, y_next = step2(x, y, ri, sj, params)
-            
-                # --- 2) Jacobian at (x, y; ri, sj) ---
-                dXdx, dXdy, dYdx, dYdy = jac2(x, y, ri, sj, params)
+                dXdx, dXdy, dYdx, dYdy = jac2(x, y, r, s, params)
 
-                # --- 3) propagate tangent ---
                 vx_new = dXdx * vx + dXdy * vy
                 vy_new = dYdx * vx + dYdy * vy
                 vx, vy = vx_new, vy_new
-                
-                # --- 4) renormalise & accumulate ---
-                norm = math.sqrt(vx * vx + vy * vy)
 
-                if norm < 1e-16: 
+                norm = math.sqrt(vx * vx + vy * vy)
+                if norm < 1e-16:
                     norm = 1e-16
 
-                if n >= n_transient: 
+                if n >= n_transient:
                     acc += math.log(norm)
 
                 inv_norm = 1.0 / norm
@@ -1695,10 +1724,7 @@ def _lyapunov_field_generic_2d_ab(
     jac2,
     seq,
     pix,
-    a0,
-    a1,
-    b0,
-    b1,
+    domain,        # [llx, lly, ulx, uly, lrx, lry] in (A,B)-plane
     x0,
     y0,
     n_transient,
@@ -1707,73 +1733,112 @@ def _lyapunov_field_generic_2d_ab(
     params,
 ):
     """
-    Generic largest Lyapunov exponent field for a 2‑D map with
-    single-parameter A/B forcing:
+    Largest Lyapunov exponent field for a 2‑D map with single-parameter
+    A/B forcing over an arbitrary parallelogram in the (A,B) plane.
 
-        (x_{n+1}, y_{n+1}) = step2(x_n, y_n, r_n, s, params)
+        (u,v) in [0,1]^2
+        (A,B) = LL + u (LR-LL) + v (UL-LL)
 
-    where r_n alternates between A and B according to `seq`,
-    and each pixel corresponds to a particular (A,B).
+    For each pixel, A and B are the two values used in the sequence.
     """
     seq_len = seq.size
-    out = np.empty((pix,pix), dtype=np.float64)
+    out = np.empty((pix, pix), dtype=np.float64)
 
     if eps_floor <= 0.0:
         eps_floor = 1e-16
 
+    denom = 1.0 if pix <= 1 else (pix - 1.0)
+
     for j in prange(pix):
-        # vertical axis = B parameter
-        Bj = b0 + (b1 - b0) * (j / (pix - 1.0))
+        v = j / denom
         for i in range(pix):
-            # horizontal axis = A parameter
-            Ai = a0 + (a1 - a0) * (i / (pix - 1.0))
+            u = i / denom
+
+            A, B = map_logical_to_physical(domain, u, v)
+
             x = x0
             y = y0
             vx = 1.0
             vy = 0.0
             acc = 0.0
+
             for n in range(n_transient + n_iter):
-                s_idx = seq[n % seq_len]  # 0 -> A, 1 -> B
-                r = Ai if s_idx == 0 else Bj
+                s_idx = seq[n % seq_len]
+                r = A if s_idx == 0 else B
+
                 # Jacobian at (x,y; r)
                 dXdx, dXdy, dYdx, dYdy = jac2(x, y, r, 0.0, params)
+
                 vx_new = dXdx * vx + dXdy * vy
                 vy_new = dYdx * vx + dYdy * vy
                 vx, vy = vx_new, vy_new
-                # Map step
+
                 x_next, y_next = step2(x, y, r, 0.0, params)
                 if not np.isfinite(x_next) or not np.isfinite(y_next):
                     x_next = 0.5
                     y_next = 0.0
+
                 norm = math.sqrt(vx * vx + vy * vy)
                 if norm < eps_floor:
                     norm = eps_floor
+
                 if n >= n_transient:
                     acc += math.log(norm)
+
                 vx /= norm
                 vy /= norm
+
                 x = x_next
                 y = y_next
+
             out[j, i] = acc / float(n_iter)
 
     return out
 
+
 # ---------------------------------------------------------------------------
-# Color mapping: Lyapunov exponent -> RGB
+# Color mapping: Lyapunov exponent -> RGB (schemes)
 # ---------------------------------------------------------------------------
 
-def lyapunov_to_rgb(
-    lyap: np.ndarray,
-    clip: float | None = DEFAULT_CLIP,
-    gamma: float = DEFAULT_GAMMA,
-    pos_color: str = "red",  # "red" or "blue"
-) -> np.ndarray:
+def _hist_equalize(values: np.ndarray, nbins: int = 256) -> np.ndarray:
     """
-    Markus & Hess style color map:
+    Simple 1D histogram equalization on 'values', returning t in [0,1].
+
+    We use a fixed number of bins and map each value to the CDF bin
+    it falls into. This is O(N) and works well for large images.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    if values.size == 0:
+        return np.zeros_like(values, dtype=np.float64)
+
+    vmin = float(values.min())
+    vmax = float(values.max())
+
+    if (not math.isfinite(vmin)) or (not math.isfinite(vmax)) or vmax <= vmin:
+        return np.zeros_like(values, dtype=np.float64)
+
+    hist, bin_edges = np.histogram(values, bins=nbins, range=(vmin, vmax))
+    cdf = hist.cumsum().astype(np.float64)
+    if cdf[-1] <= 0.0:
+        return np.zeros_like(values, dtype=np.float64)
+    cdf /= cdf[-1]
+
+    # For each value, find its bin and pick the CDF
+    idx = np.searchsorted(bin_edges, values, side="right") - 1
+    idx = np.clip(idx, 0, nbins - 1)
+    t = cdf[idx]
+    return t
+
+
+def _rgb_scheme_mh(lyap: np.ndarray, params: dict) -> np.ndarray:
+    """
+    Markus & Hess style:
 
       λ < 0 : black  -> yellow  (periodic / order)
       λ = 0 : black
       λ > 0 : black  -> red or blue (chaos)
+
+    'clip' controls the symmetric |λ| range. If clip is None, auto-range.
     """
     arr = np.asarray(lyap, dtype=np.float64)
     H, W = arr.shape
@@ -1786,6 +1851,10 @@ def lyapunov_to_rgb(
     neg_mask = finite & (arr < 0.0)
     pos_mask = finite & (arr > 0.0)
 
+    clip = params.get("clip", DEFAULT_CLIP)
+    gamma = params.get("gamma", DEFAULT_GAMMA)
+    pos_color = params.get("pos_color", "red")
+
     # symmetric |λ| scale
     if clip is not None and clip > 0 and math.isfinite(clip):
         scale = float(clip)
@@ -1793,10 +1862,10 @@ def lyapunov_to_rgb(
         min_neg = float(arr[neg_mask].min()) if np.any(neg_mask) else 0.0
         max_pos = float(arr[pos_mask].max()) if np.any(pos_mask) else 0.0
         scale = max(abs(min_neg), abs(max_pos))
-        if not math.isfinite(scale) or scale <= 0:
+        if (not math.isfinite(scale)) or scale <= 0.0:
             scale = 1.0
 
-    if gamma <= 0:
+    if gamma <= 0.0:
         gamma = 1.0
 
     # λ < 0 → black→yellow
@@ -1834,6 +1903,162 @@ def lyapunov_to_rgb(
     return rgb
 
 
+def _rgb_scheme_mh_eq(lyap: np.ndarray, params: dict) -> np.ndarray:
+    """
+    Markus & Hess style with histogram equalization.
+
+    - λ < 0 : equalize |λ| over negative values
+    - λ > 0 : equalize λ over positive values
+
+    So each 1/255-ish step tries to hold ~equal mass in λ, on each side.
+    """
+    arr = np.asarray(lyap, dtype=np.float64)
+    H, W = arr.shape
+    rgb = np.zeros((H, W, 3), dtype=np.uint8)
+
+    finite = np.isfinite(arr)
+    if not np.any(finite):
+        return rgb
+
+    neg_mask = finite & (arr < 0.0)
+    pos_mask = finite & (arr > 0.0)
+
+    gamma = params.get("gamma", DEFAULT_GAMMA)
+    pos_color = params.get("pos_color", "red")
+    nbins = int(params.get("nbins", 256))
+
+    if gamma <= 0.0:
+        gamma = 1.0
+
+    # λ < 0: equalize |λ|
+    if np.any(neg_mask):
+        vals = np.abs(arr[neg_mask])
+        t = _hist_equalize(vals, nbins=nbins)  # in [0,1]
+        if gamma != 1.0:
+            t = t ** float(gamma)
+        r = t
+        g = t
+        rgb[neg_mask, 0] = np.rint(r * 255.0).astype(np.uint8)
+        rgb[neg_mask, 1] = np.rint(g * 255.0).astype(np.uint8)
+        rgb[neg_mask, 2] = 0
+
+    # λ > 0: equalize λ
+    if np.any(pos_mask):
+        vals = arr[pos_mask]
+        t = _hist_equalize(vals, nbins=nbins)  # in [0,1]
+        if gamma != 1.0:
+            t = t ** float(gamma)
+
+        if pos_color.lower().startswith("b"):
+            r = np.zeros_like(t)
+            g = np.zeros_like(t)
+            b = t
+        else:
+            r = t
+            g = np.zeros_like(t)
+            b = np.zeros_like(t)
+
+        rgb[pos_mask, 0] = np.rint(r * 255.0).astype(np.uint8)
+        rgb[pos_mask, 1] = np.rint(g * 255.0).astype(np.uint8)
+        rgb[pos_mask, 2] = np.rint(b * 255.0).astype(np.uint8)
+
+    return rgb
+
+
+# Scheme registry: ADD NEW SCHEMES HERE ONLY
+RGB_SCHEMES: dict[str, dict] = {
+    "mh": dict(
+        func=_rgb_scheme_mh,
+        defaults=dict(
+            clip=DEFAULT_CLIP,       # None -> auto symmetric |λ|
+            gamma=DEFAULT_GAMMA,
+            pos_color="red",
+        ),
+    ),
+
+    "mh_eq": dict(
+        func=_rgb_scheme_mh_eq,
+        defaults=dict(
+            gamma=DEFAULT_GAMMA,
+            pos_color="red",
+            nbins=256,
+        ),
+    ),
+}
+
+DEFAULT_RGB_SCHEME = "mh"
+
+
+def lyapunov_to_rgb(lyap: np.ndarray, specdict: dict) -> np.ndarray:
+    """
+    Apply a colorization scheme to the λ-field based on the 'rgb' spec.
+
+    Syntax:
+        rgb:mh                -> use 'mh' defaults
+        rgb:mh:clip           -> set clip
+        rgb:mh:clip:gamma     -> set clip & gamma
+        rgb:mh:*:*:blue       -> keep defaults for clip/gamma, pos_color='blue'
+
+        rgb:mh_eq             -> equalized scheme with defaults
+        rgb:mh_eq:0.25        -> mh_eq with gamma=0.25
+    """
+    # --- 1) choose scheme ---
+    rgb_vals = specdict.get("rgb")
+    if rgb_vals:
+        scheme_name = str(rgb_vals[0]).strip().lower()
+    else:
+        scheme_name = DEFAULT_RGB_SCHEME
+
+    scheme_cfg = RGB_SCHEMES.get(scheme_name, RGB_SCHEMES[DEFAULT_RGB_SCHEME])
+
+    # --- 2) start from scheme defaults ---
+    params = dict(scheme_cfg["defaults"])  # shallow copy
+
+    # --- 3) optional global gamma: override if present and scheme uses gamma ---
+    gamma_vals = specdict.get("gamma")
+    if gamma_vals and "gamma" in params:
+        try:
+            params["gamma"] = float(_eval_number(gamma_vals[0]).real)
+        except Exception:
+            pass
+
+     # --- 4) parse positional args from rgb:scheme:arg1:arg2:... ---
+    if rgb_vals and len(rgb_vals) > 1:
+        arg_tokens = rgb_vals[1:]
+
+        # order is exactly the insertion order of defaults
+        defaults = scheme_cfg["defaults"]
+        order = list(defaults.keys())
+
+        for idx, tok in enumerate(arg_tokens):
+            if idx >= len(order):
+                break
+            name = order[idx]
+            if name not in params:
+                continue
+
+            default_val = params[name]
+            tok_str = str(tok).strip()
+            if tok_str == "*":
+                # '*' -> keep default
+                continue
+
+            # parse based on type of default
+            if isinstance(default_val, (float, int)):
+                try:
+                    params[name] = float(_eval_number(tok_str).real)
+                except Exception:
+                    pass
+            elif isinstance(default_val, str):
+                params[name] = tok_str
+            else:
+                # unsupported type, leave default
+                pass
+
+    func = scheme_cfg["func"]
+    return func(lyap, params)
+
+
 # ---------------------------------------------------------------------------
 # Spec helpers using specparser.split_chain
 # ---------------------------------------------------------------------------
@@ -1860,6 +2085,195 @@ def _get_int(d: dict, key: str, default: int) -> int:
         return int(round(float(_eval_number(vals[0]).real)))
     except Exception:
         return int(default)
+
+# ---------------------------------------------------------------------------
+# Domain / affine mapping helpers
+# ---------------------------------------------------------------------------
+
+def _get_corner(d: dict, key: str, default_x: float, default_y: float):
+    """
+    Parse a corner operator like:
+
+        ll:x:y
+        ul:*:y
+        lr:x:*
+        ll:x        (x only, y from default)
+        ll          (no args, all defaults)
+
+    '*' means "keep default". Missing args also keep defaults.
+    """
+    vals = d.get(key)
+    if not vals:
+        return float(default_x), float(default_y)
+
+    x = default_x
+    y = default_y
+
+    try:
+        # First argument: x
+        if len(vals) >= 1:
+            v0 = vals[0].strip()
+            if v0 != "*":
+                x = float(_eval_number(v0).real)
+
+        # Second argument: y
+        if len(vals) >= 2:
+            v1 = vals[1].strip()
+            if v1 != "*":
+                y = float(_eval_number(v1).real)
+
+    except Exception:
+        # On parse error, fall back to defaults
+        x, y = default_x, default_y
+
+    return float(x), float(y)
+
+
+def _build_affine_domain(
+    specdict: dict,
+    a0: float,
+    b0: float,
+    a1: float,
+    b1: float,
+) -> np.ndarray:
+    """
+    Build a 2‑D affine domain mapping from logical (u,v) in [0,1]^2
+    to physical (A,B) coordinates.
+
+    We use three corners:
+
+        LL = lower-left   (u=0, v=0)
+        UL = upper-left   (u=0, v=1)
+        LR = lower-right  (u=1, v=0)
+
+    The user can override them via:
+
+        ll:x:y   ul:x:y   lr:x:y
+
+    with '*' as "keep default" and optional 1-arg forms ll:x, etc.
+
+    Additionally, 'ur:x:y' can be used to complete a rectangle when
+    ul/lr are not given explicitly:
+
+        ll:x:y, ur:ux:uy
+
+    means "axis-aligned rectangle" from (x,y) to (ux,uy).
+    """
+
+    # 0) defaults: axis-aligned rectangle from [a0,a1] x [b0,b1]
+    llx, lly = a0, b0
+    ulx, uly = a0, b1
+    lrx, lry = a1, b0
+
+    # 1) apply ll/ul/lr with '*' semantics
+    llx, lly = _get_corner(specdict, "ll", llx, lly)
+    ulx, uly = _get_corner(specdict, "ul", ulx, uly)
+    lrx, lry = _get_corner(specdict, "lr", lrx, lry)
+
+    # 2) ur, if present and ul/lr not explicitly given, completes rectangle
+    if "ur" in specdict:
+        urx, ury = _get_corner(specdict, "ur", a1, b1)
+
+        # Only fill UL/LR from UR if user *didn't* specify them directly
+        if "ul" not in specdict:
+            ulx, uly = llx, ury
+        if "lr" not in specdict:
+            lrx, lry = urx, lly
+
+    # 3) fine-grained llx/lly/ulx/... overrides (power user layer)
+    llx = _get_float(specdict, "llx", llx)
+    lly = _get_float(specdict, "lly", lly)
+    ulx = _get_float(specdict, "ulx", ulx)
+    uly = _get_float(specdict, "uly", uly)
+    lrx = _get_float(specdict, "lrx", lrx)
+    lry = _get_float(specdict, "lry", lry)
+
+    domain_affine = np.asarray(
+        [llx, lly, ulx, uly, lrx, lry],
+        dtype=np.float64,
+    )
+
+    # Optional sanity check: are the three points colinear?
+    vx0 = lrx - llx
+    vy0 = lry - lly
+    vx1 = ulx - llx
+    vy1 = uly - lly
+    area = abs(vx0 * vy1 - vx1 * vy0)
+    if area == 0.0:
+        print("WARNING: affine domain is degenerate (LL, UL, LR colinear)")
+
+    return domain_affine
+
+def debug_affine_for_spec(spec: str) -> None:
+    """
+    Print the resolved affine domain and a few logical->physical
+    sample points for the given spec string.
+    """
+    specdict = specparser.split_chain(spec)
+
+    map_name = None
+    for op in specdict.keys():
+        if op in MAPS:
+            map_name = op
+            break
+    if map_name is None:
+        print(f"No map name found in spec {spec}")
+        return
+
+    map_cfg = MAPS[map_name]
+    dim = map_cfg.get("dim", 1)
+    forcing = map_cfg.get("forcing", None)
+
+    params = map_cfg["params"].copy()
+    params[0] = _get_float(specdict, "a", params[0])
+    params[1] = _get_float(specdict, "b", params[1])
+    params[2] = _get_float(specdict, "c", params[2])
+    params[3] = _get_float(specdict, "d", params[3])
+
+    domain = map_cfg["domain"].copy()
+
+    use_seq = (dim == 1) or (dim == 2 and forcing == "ab")
+    domain_idx = 0
+    for i, v in enumerate(specdict[map_name]):
+        if use_seq and i == 0 and _looks_like_sequence_token(v):
+            continue
+        try:
+            domain_component = float(specparser.simple_eval_number(v).real)
+        except Exception:
+            continue
+        if domain_idx < domain.size:
+            domain[domain_idx] = domain_component
+            domain_idx += 1
+
+    a0 = _get_float(specdict, "a0", domain[0])
+    b0 = _get_float(specdict, "b0", domain[1])
+    a1 = _get_float(specdict, "a1", domain[2])
+    b1 = _get_float(specdict, "b1", domain[3])
+
+    domain_affine = _build_affine_domain(specdict, a0, b0, a1, b1)
+    llx, lly, ulx, uly, lrx, lry = domain_affine
+
+    print("Affine domain:")
+    print(f"  LL = ({llx}, {lly})")
+    print(f"  UL = ({ulx}, {uly})")
+    print(f"  LR = ({lrx}, {lry})")
+
+    def map_uv(u, v):
+        A = llx + u * (lrx - llx) + v * (ulx - llx)
+        B = lly + u * (lry - lly) + v * (uly - lly)
+        return A, B
+
+    samples = [
+        (0.0, 0.0, "(0,0)"),
+        (1.0, 0.0, "(1,0)"),
+        (0.0, 1.0, "(0,1)"),
+        (1.0, 1.0, "(1,1)"),
+        (0.5, 0.5, "(0.5,0.5)"),
+    ]
+    print("Sample logical -> physical mapping:")
+    for u, v, label in samples:
+        A, B = map_uv(u, v)
+        print(f"  {label}: (u={u}, v={v}) -> ({A}, {B})")
 
 
 # ---------------------------------------------------------------------------
@@ -1916,12 +2330,14 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
     a1 = _get_float(specdict, "a1", domain[2])
     b1 = _get_float(specdict, "b1", domain[3])
 
+    domain_affine = _build_affine_domain(specdict, a0, b0, a1, b1)
+
     x0 = _get_float(specdict, "x0", map_cfg.get("x0", 0.5))
     y0 = _get_float(specdict, "y0", map_cfg.get("y0", 0.5))
     n_tr  = _get_int(specdict, "trans", map_cfg.get("trans", DEFAULT_TRANS))
     n_it  = _get_int(specdict, "iter", map_cfg.get("iter",  DEFAULT_ITER))
     eps   = _get_float(specdict, "eps",   DEFAULT_EPS_LYAP)
-    gamma = _get_float(specdict, "gamma", DEFAULT_GAMMA)
+ 
 
     if dim == 1:
         lyap = _lyapunov_field_generic(
@@ -1929,10 +2345,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
             map_cfg["deriv"],
             seq_arr,
             int(pix),
-            float(a0),
-            float(a1),
-            float(b0),
-            float(b1),
+            domain_affine,
             float(x0),
             int(n_tr),
             int(n_it),
@@ -1949,10 +2362,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
             map_cfg["jac2"],
             seq_arr,
             pix,
-            a0, 
-            a1, 
-            b0, 
-            b1,
+            domain_affine,
             x0, 
             y0,
             n_tr, 
@@ -1967,10 +2377,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
             map_cfg["step2"],
             map_cfg["jac2"],
             int(pix),
-            float(a0),
-            float(a1),
-            float(b0),
-            float(b1),
+            domain_affine,
             float(x0),
             float(y0),
             int(n_tr),
@@ -1981,17 +2388,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
     else:
         raise SystemExit(f"Unsupported dim={dim} for map '{map_name}'")
 
-    # color mapping unchanged
-    clip_raw = _get_float(
-        specdict, "clip",
-        DEFAULT_CLIP if DEFAULT_CLIP is not None else -1.0
-    )
-    if DEFAULT_CLIP is None and (clip_raw <= 0 or not math.isfinite(clip_raw)):
-        clip_used = None
-    else:
-        clip_used = clip_raw
-
-    rgb = lyapunov_to_rgb(lyap, clip=clip_used, gamma=gamma)
+    rgb = lyapunov_to_rgb(lyap, specdict)
     return rgb
 
 
@@ -2066,6 +2463,11 @@ def main() -> None:
         default=None,
         help="override map equation",
     )
+    p.add_argument(
+        "--check-affine",
+        action="store_true",
+        help="Print affine domain mapping for the first expanded spec and exit.",
+    )
 
 
     args = p.parse_args()
@@ -2100,6 +2502,12 @@ def main() -> None:
 
     # Expand the main spec chain
     specs = expandspec.expand_cartesian_lists(args.spec)
+
+    if args.check_affine:
+        # just inspect the first expanded spec
+        debug_affine_for_spec(specs[0])
+        return
+    
     if args.show_specs:
         for s in specs:
             print(s)
@@ -2116,7 +2524,7 @@ def main() -> None:
         rgb = spec2lyapunov(spec, pix=args.pix)
         print(f"field time: {time.perf_counter() - t0:.3f}s")
         # swap A/B axes and flip vertically to match Markus & Hess style
-        rgb = np.flipud(np.transpose(rgb, (1, 0, 2)))
+        rgb = np.flipud(rgb)
         tiles.append(rgb)
         titles.append(spec)
 
