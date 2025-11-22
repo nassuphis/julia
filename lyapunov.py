@@ -65,65 +65,65 @@ import re
 
 # logistic 
 
-@njit(float64(float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64), fastmath=False, cache=True)
 def logistic_step(x, r):
     return r * x * (1.0 - x)
 
 
-@njit(float64(float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64), fastmath=False, cache=True)
 def logistic_deriv(x, r):
     return r * (1.0 - 2.0 * x)
 
 
-@njit(float64(float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64), fastmath=False, cache=True)
 def sine_step(x, r):
     return r * math.sin(math.pi * x)
 
 
-@njit(float64(float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64), fastmath=False, cache=True)
 def sine_deriv(x, r):
     return r * math.pi * math.cos(math.pi * x)
 
 
-@njit(float64(float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64), fastmath=False, cache=True)
 def tent_step(x, r):
     return r * x if x < 0.5 else r * (1.0 - x)
 
 
-@njit(float64(float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64), fastmath=False, cache=True)
 def tent_deriv(x, r):
     return r if x < 0.5 else -r
 
-@njit(float64(float64, float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64, float64), fastmath=False, cache=True)
 def heart_step(x, r, alpha):
     # x_{n+1} = sin(α x_n) + r
     return math.sin(alpha * x) + r
 
 
-@njit(float64(float64, float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64, float64), fastmath=False, cache=True)
 def heart_deriv(x, r, alpha):
     # derivative wrt x_n: d/dx [sin(α x) + r] = α cos(α x)
     return alpha * math.cos(alpha * x)
 
-@njit(float64(float64, float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64, float64), fastmath=False, cache=True)
 def eq984_step(x, r, beta):
     # x_{n+1} = r ( sin x + beta sin 9x )
     return r * (math.sin(x) + beta * math.sin(9.0 * x))
 
 
-@njit(float64(float64, float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64, float64), fastmath=False, cache=True)
 def eq984_deriv(x, r, beta):
     # d/dx [ r (sin x + beta sin 9x) ]
     return r * (math.cos(x) + beta * 9.0 * math.cos(9.0 * x))
 
 
-@njit(float64(float64, float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64, float64), fastmath=False, cache=True)
 def eq985_step(x, r, beta):
     # x_{n+1} = beta * exp(tan(r x) - x)
     return beta * math.exp(math.tan(r * x) - x)
 
 
-@njit(float64(float64, float64, float64, float64), fastmath=True, cache=True)
+@njit(float64(float64, float64, float64, float64), fastmath=False, cache=True)
 def eq985_deriv(x, r, beta, x_next):
     """
     d/dx [ beta * exp(tan(r x) - x) ]
@@ -244,7 +244,7 @@ DEFAULT_EQ985_BETA = 1.0
         float64,    # beta  (eq984, eq985)
     ),
     parallel=True,
-    fastmath=True,
+    fastmath=False,
     cache=True,
 )
 def _lyapunov_field(
@@ -346,7 +346,7 @@ def _lyapunov_field(
         int32,      # n_iter
     ),
     parallel=True,
-    fastmath=True,
+    fastmath=False,
     cache=True,
 )
 def _lyapunov_field_kicked(
@@ -464,7 +464,7 @@ def _lyapunov_field_kicked(
         int32,   # n_iter
     ),
     parallel=True,
-    fastmath=True,
+    fastmath=False,
     cache=True,
 )
 def _lyapunov_field_parasite(
@@ -602,7 +602,7 @@ def _lyapunov_field_parasite(
         int32,      # n_iter
     ),
     parallel=True,
-    fastmath=True,
+    fastmath=False,
     cache=True,
 )
 def _lyapunov_field_predprey(
@@ -725,7 +725,7 @@ def _lyapunov_field_predprey(
         float64,    # alpha
     ),
     parallel=True,
-    fastmath=True,
+    fastmath=False,
     cache=True,
 )
 def _lyapunov_field_dlog(
