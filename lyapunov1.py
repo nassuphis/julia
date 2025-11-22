@@ -1387,83 +1387,104 @@ MAP_TEMPLATES: dict[str, dict] = {
 
 }
 
+# Lazy map cache: compiled maps live here, built on first use.
+MAPS: dict[str, dict] = {}
 
-def _build_maps() -> dict:
-    out = {}
 
-    for name, cfg in MAP_TEMPLATES.items():
-        dim = cfg.get("dim", 1)
+def _build_map(name: str) -> dict:
+    """
+    Build (compile) a single map configuration from MAP_TEMPLATES[name].
+    This does the same work the old _build_maps() did, but for one name.
+    """
+    if name not in MAP_TEMPLATES:
+        raise KeyError(f"Unknown map '{name}'")
 
-        if dim == 1:
-            expr = cfg["expr"]
-            step_py = _make_py_func(expr)
-            der_expr = cfg.get("deriv_expr")
-            if der_expr is None:
-                der_expr = _sympy_deriv(expr)
-            der_py = _make_py_func(der_expr)
+    cfg = MAP_TEMPLATES[name]
+    dim = cfg.get("dim", 1)
 
-            step_jit = njit(STEP_SIG, cache=False, fastmath=False)(step_py)
-            der_jit  = njit(STEP_SIG, cache=False, fastmath=False)(der_py)
+    if dim == 1:
+        expr = cfg["expr"]
+        step_py = _make_py_func(expr)
+        der_expr = cfg.get("deriv_expr")
+        if der_expr is None:
+            der_expr = _sympy_deriv(expr)
+        der_py = _make_py_func(der_expr)
 
-            params_default = np.asarray(
-                cfg.get("params", [0.0, 0.0, 0.0, 0.0]),
-                dtype=np.float64,
-            )
-            domain_default = np.asarray(
-                cfg.get("domain", [0.0, 0.0, 1.0, 1.0]),
-                dtype=np.float64,
-            )
+        step_jit = njit(STEP_SIG, cache=False, fastmath=False)(step_py)
+        der_jit  = njit(STEP_SIG, cache=False, fastmath=False)(der_py)
 
-            new_cfg = dict(cfg)
-            new_cfg["step"] = step_jit
-            new_cfg["deriv"] = der_jit
-            new_cfg["params"] = params_default
-            new_cfg["domain"] = domain_default
-            new_cfg["dim"] = 1
-            new_cfg["eps_floor"] = cfg.get("eps_floor", 1e-16)
-            out[name] = new_cfg
+        params_default = np.asarray(
+            cfg.get("params", [0.0, 0.0, 0.0, 0.0]),
+            dtype=np.float64,
+        )
+        domain_default = np.asarray(
+            cfg.get("domain", [0.0, 0.0, 1.0, 1.0]),
+            dtype=np.float64,
+        )
 
-        elif dim == 2:
-            if "step2_func" in cfg and "jac2_func" in cfg:
-                step2_py = cfg["step2_func"]
-                jac2_py  = cfg["jac2_func"]
-                print(f"Compiling manual functions for {name}")
-            else:
-                expr_x = cfg["expr_x"]
-                expr_y = cfg["expr_y"]
-                step2_py = _make_py_func_2d_step(expr_x, expr_y)
-                if "jac_exprs" in cfg:
-                    dXdx, dXdy, dYdx, dYdy = cfg["jac_exprs"]
-                else:
-                    dXdx, dXdy, dYdx, dYdy = _sympy_jacobian_2d(expr_x, expr_y)
-                jac2_py = _make_py_func_2d_jac(dXdx, dXdy, dYdx, dYdy)
-            step2_jit = njit(STEP2_SIG, cache=False, fastmath=False)(step2_py)
-            jac2_jit  = njit(JAC2_SIG,  cache=False, fastmath=False)(jac2_py)
-            params_default = np.asarray(
-                cfg.get("params", [0.0, 0.0, 0.0, 0.0]),
-                dtype=np.float64,
-            )
-            domain_default = np.asarray(
-                cfg.get("domain", [0.0, 0.0, 1.0, 1.0]),
-                dtype=np.float64,
-            )
-            new_cfg = dict(cfg)
-            new_cfg["step2"] = step2_jit
-            new_cfg["jac2"] = jac2_jit
-            new_cfg["params"] = params_default
-            new_cfg["domain"] = domain_default
-            new_cfg["dim"] = 2
-            new_cfg["forcing"] = cfg.get("forcing", None)
-            out[name] = new_cfg
+        new_cfg = dict(cfg)
+        new_cfg["step"] = step_jit
+        new_cfg["deriv"] = der_jit
+        new_cfg["params"] = params_default
+        new_cfg["domain"] = domain_default
+        new_cfg["dim"] = 1
+        new_cfg["eps_floor"] = cfg.get("eps_floor", 1e-16)
+        return new_cfg
 
+    elif dim == 2:
+        if "step2_func" in cfg and "jac2_func" in cfg:
+            step2_py = cfg["step2_func"]
+            jac2_py  = cfg["jac2_func"]
+            print(f"Compiling manual functions for {name}")
         else:
-            raise ValueError(f"Unsupported dim={dim} for map '{name}'")
+            expr_x = cfg["expr_x"]
+            expr_y = cfg["expr_y"]
+            step2_py = _make_py_func_2d_step(expr_x, expr_y)
+            if "jac_exprs" in cfg:
+                dXdx, dXdy, dYdx, dYdy = cfg["jac_exprs"]
+            else:
+                dXdx, dXdy, dYdx, dYdy = _sympy_jacobian_2d(expr_x, expr_y)
+            jac2_py = _make_py_func_2d_jac(dXdx, dXdy, dYdx, dYdy)
 
-    return out
+        step2_jit = njit(STEP2_SIG, cache=False, fastmath=False)(step2_py)
+        jac2_jit  = njit(JAC2_SIG,  cache=False, fastmath=False)(jac2_py)
+
+        params_default = np.asarray(
+            cfg.get("params", [0.0, 0.0, 0.0, 0.0]),
+            dtype=np.float64,
+        )
+        domain_default = np.asarray(
+            cfg.get("domain", [0.0, 0.0, 1.0, 1.0]),
+            dtype=np.float64,
+        )
+
+        new_cfg = dict(cfg)
+        new_cfg["step2"] = step2_jit
+        new_cfg["jac2"] = jac2_jit
+        new_cfg["params"] = params_default
+        new_cfg["domain"] = domain_default
+        new_cfg["dim"] = 2
+        new_cfg["forcing"] = cfg.get("forcing", None)
+        new_cfg["eps_floor"] = cfg.get("eps_floor", 1e-16)
+        return new_cfg
+
+    else:
+        raise ValueError(f"Unsupported dim={dim} for map '{name}'")
 
 
-# Master map configuration: everything lives here.
-MAPS = _build_maps()
+
+def _get_map(name: str) -> dict:
+    """
+    Return compiled map config for 'name', building it on first use.
+    """
+    cfg = MAPS.get(name)
+    if cfg is not None:
+        return cfg
+    # build + cache
+    print(f"Compiling map '{name}'")
+    cfg = _build_map(name)
+    MAPS[name] = cfg
+    return cfg
 
 
 # ---------------------------------------------------------------------------
@@ -2285,13 +2306,13 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
 
     map_name = None
     for op in specdict.keys():
-        if op in MAPS:
+        if op in MAP_TEMPLATES:
             map_name = op
             break
     if map_name is None:
         raise SystemExit(f"No map name found in spec {spec}")
 
-    map_cfg = MAPS[map_name]
+    map_cfg =_get_map(map_name)
     dim = map_cfg.get("dim", 1)
     forcing = map_cfg.get("forcing", None)
 
@@ -2474,17 +2495,16 @@ def main() -> None:
 
     if args.map is not None:
         map_name, new_expr = args.map.split("=", 1)
-        if map_name in MAPS:
+        if map_name in MAP_TEMPLATES:
             new_der_expr = _sympy_deriv(new_expr)
-            print(f"map derivative:{new_der_expr}")
-            new_step_py = _make_py_func(new_expr)
-            new_der_py = _make_py_func(new_der_expr)
-            new_step_jit = njit(STEP_SIG, cache=False, fastmath=False)(new_step_py)
-            new_der_jit  = njit(STEP_SIG, cache=False, fastmath=False)(new_der_py)
-            MAPS[map_name]["step"] = new_step_jit
-            MAPS[map_name]["deriv"] = new_der_jit
-            spec_str=f",modify:{map_name}:{new_expr}"
-            args.spec=args.spec+spec_str
+            print(f"map derivative: {new_der_expr}")
+            # patch the template; lazy builder will use this
+            MAP_TEMPLATES[map_name]["expr"] = new_expr
+            MAP_TEMPLATES[map_name]["deriv_expr"] = new_der_expr
+            spec_str = f",modify:{map_name}:{new_expr}"
+            args.spec = args.spec + spec_str
+        else:
+            print(f"WARNING: --map refers to unknown map '{map_name}'")
 
     # Apply constants (like in julia.py)
     for kv in args.const:
