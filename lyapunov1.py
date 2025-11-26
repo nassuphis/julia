@@ -240,6 +240,10 @@ def floor(x):
 def ceil(x):
     return math.ceil(x)
 
+@njit(types.float64(types.float64,types.float64,), cache=True, fastmath=False)
+def abs_cap(x,cap):
+    return min(abs(x),cap)*sign(x)
+
 # ---------------------------------------------------------------------------
 # build python function text
 # ---------------------------------------------------------------------------
@@ -355,185 +359,70 @@ def _funtext_2d_jac(
 # build python functions from text
 # ---------------------------------------------------------------------------
 
-# 1D forced
+NS = {
+    "step": step,
+    "Heaviside": Heaviside,
+    "DiracDelta": DiracDelta,
+    "sign": sign,
+    "Abs": Abs,
+    "abs": Abs,
+    "sin": np.sin,
+    "cos": np.cos,
+    "tan": np.tan,
+    "sec": sec,
+    "cosh": np.cosh,
+    "sinh": np.sinh,
+    "exp": np.exp,
+    "pow": np.power,
+    "apow": apow,
+    "log": np.log,
+    "mod1": mod1,
+    "Mod": Mod,
+    "Derivative": Derivative,
+    "re": re,
+    "im": im,
+    "pi": np.pi,
+    "np": np,
+    "math": math,
+    "max": max,
+    "min": min,
+    "floor": floor,
+    "ceil": ceil,
+    "abs_cap": abs_cap,
+}
+
+# 1D forced step + deriv
 def _funpy_1d(expr: str, dict):
-    """
-    Create a plain Python function f(x, r, a) that can be jitted.
-    """
-    ns = {
-        "step": step,
-        "Heaviside": Heaviside,
-        "DiracDelta": DiracDelta,
-        "sign": sign,
-        "Abs": Abs,
-        "abs": Abs,
-        "sin": np.sin,
-        "cos": np.cos,
-        "tan": np.tan,
-        "sec": sec,
-        "cosh": np.cosh,
-        "sinh": np.sinh,
-        "exp": np.exp,
-        "pow": np.power,
-        "apow": apow,
-        "log": np.log,
-        "mod1": mod1,
-        "Mod": Mod,
-        "Derivative": Derivative,
-        "re": re,
-        "im": im,
-        "pi": np.pi,
-        "np": np,
-        "math": math,
-        "max": max,
-        "min": min,
-        "floor": floor,
-        "ceil": ceil,
-    }
+    ns = NS.copy()
     src = _funtext_1d("impl",expr, dict)
     exec(src, ns, ns)
     return ns["impl"]
 
-# 2D forced
+# 2D forced step 
 def _funpy_2d_ab_step(expr_x: str, expr_y: str, dict):
-    ns = {  # same namespace as _make_py_func, plus what you need
-        "step": step,
-        "Heaviside": Heaviside,
-        "DiracDelta": DiracDelta,
-        "sign": sign,
-        "Abs": Abs,
-        "abs": Abs,
-        "sin": np.sin,
-        "cos": np.cos,
-        "tan": np.tan,
-        "sec": sec,
-        "cosh": np.cosh,
-        "sinh": np.sinh,
-        "exp": np.exp,
-        "pow": np.power,
-        "apow": apow,
-        "log": np.log,
-        "mod1": mod1,
-        "Mod": Mod,
-        "Derivative": Derivative,
-        "re": re,
-        "im": im,
-        "pi": np.pi,
-        "np": np,
-        "math": math,
-        "max": max,
-        "min": min,
-        "floor": floor,
-        "ceil": ceil,
-    }
+    ns = NS.copy()
     src = _funtext_2d_ab_step("impl2_step", expr_x, expr_y, dict)
     exec(src, ns, ns)
     return ns["impl2_step"]
 
 
+# 2D forced jacobian
 def _funpy_2d_ab_jac(dXdx, dXdy, dYdx, dYdy,dict):
-    ns = {  # same namespace
-        "step": step,
-        "Heaviside": Heaviside,
-        "DiracDelta": DiracDelta,
-        "sign": sign,
-        "Abs": Abs,
-        "abs": Abs,
-        "sin": np.sin,
-        "cos": np.cos,
-        "tan": np.tan,
-        "sec": sec,
-        "cosh": np.cosh,
-        "sinh": np.sinh,
-        "exp": np.exp,
-        "pow": np.power,
-        "apow": apow,
-        "log": np.log,
-        "mod1": mod1,
-        "Mod": Mod,
-        "Derivative": Derivative,
-        "re": re,
-        "im": im,
-        "pi": np.pi,
-        "np": np,
-        "math": math,
-        "max": max,
-        "min": min,
-        "floor": floor,
-        "ceil": ceil,
-    }
+    ns = NS.copy()
     src = _funtext_2d_ab_jac("impl2_jac", dXdx, dXdy, dYdx, dYdy, dict)
     exec(src, ns, ns)
     return ns["impl2_jac"]
 
 # 2D 
 def _funpy_2d_step(expr_x: str, expr_y: str, dict):
-    ns = {  # same namespace as _make_py_func, plus what you need
-        "step": step,
-        "Heaviside": Heaviside,
-        "DiracDelta": DiracDelta,
-        "sign": sign,
-        "Abs": Abs,
-        "abs": Abs,
-        "sin": np.sin,
-        "cos": np.cos,
-        "tan": np.tan,
-        "sec": sec,
-        "cosh": np.cosh,
-        "sinh": np.sinh,
-        "exp": np.exp,
-        "pow": np.power,
-        "apow": apow,
-        "log": np.log,
-        "mod1": mod1,
-        "Mod": Mod,
-        "Derivative": Derivative,
-        "re": re,
-        "im": im,
-        "pi": np.pi,
-        "np": np,
-        "math": math,
-        "max": max,
-        "min": min,
-        "floor": floor,
-        "ceil": ceil,
-    }
+    ns = NS.copy()
     src = _funtext_2d_step("impl2_step", expr_x, expr_y, dict)
     exec(src, ns, ns)
     return ns["impl2_step"]
 
-
+# 2D jacobian
 def _funpy_2d_jac(dXdx, dXdy, dYdx, dYdy,dict):
-    ns = {  # same namespace
-        "step": step,
-        "Heaviside": Heaviside,
-        "DiracDelta": DiracDelta,
-        "sign": sign,
-        "Abs": Abs,
-        "abs": Abs,
-        "sin": np.sin,
-        "cos": np.cos,
-        "tan": np.tan,
-        "sec": sec,
-        "cosh": np.cosh,
-        "sinh": np.sinh,
-        "exp": np.exp,
-        "pow": np.power,
-        "apow": apow,
-        "log": np.log,
-        "mod1": mod1,
-        "Mod": Mod,
-        "Derivative": Derivative,
-        "re": re,
-        "im": im,
-        "pi": np.pi,
-        "np": np,
-        "math": math,
-        "max": max,
-        "min": min,
-        "floor": floor,
-        "ceil": ceil,
-    }
+    ns = NS.copy()
     src = _funtext_2d_jac("impl2_jac", dXdx, dXdy, dYdx, dYdy, dict)
     exec(src, ns, ns)
     return ns["impl2_jac"]
@@ -615,30 +504,18 @@ def parasite_step2_py(x, y, s, r, param):
     invK = 1.0 / K
     
     F = rj * (1.0 - H * invK) - a * P
-    if F > EXP_MAX: F = EXP_MAX
-    elif F < -EXP_MAX: F = -EXP_MAX
+    F = min(abs(F),EXP_MAX)*sign(F)
     expF = math.exp(F)
 
     G = -a * P
-    if G > EXP_MAX: G = EXP_MAX
-    elif G < -EXP_MAX: G = -EXP_MAX
+    G = min(abs(G),EXP_MAX)*sign(G)
     E = math.exp(G)
 
     H_next = H * expF
     P_next = H * (1.0 - E)    
 
-    H = H_next
-    P = P_next
-
-    if H > STATE_MAX: 
-        H = STATE_MAX
-    elif H < -STATE_MAX: 
-        H = -STATE_MAX
-
-    if P > STATE_MAX: 
-        P = STATE_MAX
-    elif P < -STATE_MAX: 
-        P = -STATE_MAX
+    H = min(abs(H_next),STATE_MAX)*sign(H_next)
+    P = min(abs(P_next),STATE_MAX)*sign(P_next)
 
     if not (np.isfinite(H) and np.isfinite(P)): 
         H, P = 1.0, 1.0
@@ -655,19 +532,12 @@ def parasite_jac2_py(x, y, s, r, param):
     invK = 1.0 / K
 
     F = rj * (1.0 - H * invK) - a * P
-
-    if F > EXP_MAX: 
-        F = EXP_MAX
-    elif F < -EXP_MAX: 
-        F = -EXP_MAX
+    F = min(abs(F),EXP_MAX)*sign(F)
 
     expF = math.exp(F)
 
     G = -a * P
-    if G > EXP_MAX: 
-        G = EXP_MAX
-    elif G < -EXP_MAX: 
-        G = -EXP_MAX
+    G = min(abs(G),EXP_MAX)*sign(G)
     E = math.exp(G)
 
     # Jacobian
@@ -678,57 +548,26 @@ def parasite_jac2_py(x, y, s, r, param):
     
     return dHdH, dHdP, dPdH, dPdP
 
-def predprey_step2_py(x, y, s, r, param):
-    """
-    One step of the predator–prey map with periodically forced 'a':
-
-        x_{n+1} = a_n x_n (1 - x_n - y_n)
-        y_{n+1} = b x_n y_n
-
-    Here:
-        r      = a_n  (either A or B, chosen by the A/B sequence)
-        param[1] = b  (constant over the whole tile)
-
-    We also replicate the STATE_MAX bounding + NaN reset from the
-    original _lyapunov_field_predprey.
-    """
-    STATE_MAX = 1e6
-
-    a_param = r
-    b_param = param[1]   # param[1] will be DEFAULT_PRED_B, overridden by b:...
-
+def predprey_step2_py(x, y, forced):
+    a_param = forced
+    b_param = 3.569985
     x_next = a_param * x * (1.0 - x - y)
     y_next = b_param * x * y
-
-    # crude bounding to avoid numeric blowup (same thresholds as original)
-    if x_next > STATE_MAX:
-        x_next = STATE_MAX
-    elif x_next < -STATE_MAX:
-        x_next = -STATE_MAX
-    if y_next > STATE_MAX:
-        y_next = STATE_MAX
-    elif y_next < -STATE_MAX:
-        y_next = -STATE_MAX
-
+    x_next = min(abs(x_next),1e6)*sign(x_next)
+    y_next = min(abs(y_next),1e6)*sign(y_next)
     if not (np.isfinite(x_next) and np.isfinite(y_next)):
         x_next = 0.5
         y_next = 0.5
-
     return x_next, y_next
 
 
-def predprey_jac2_py(x, y, s, r, param):
-    """
-    Jacobian of the predator–prey map at (x, y) for a_n = r, b = param[1].
-    """
-    a_param = r
-    b_param = param[1]
-
+def predprey_jac2_py(x, y, forced):
+    a_param = forced
+    b_param = 3.569985
     dxdx = a_param * (1.0 - 2.0 * x - y)
     dxdy = -a_param * x
     dydx = b_param * y
     dydy = b_param * x
-
     return dxdx, dxdy, dydx, dydy
 
 def cardiac_step2_py(x, y, s, r, param):
@@ -910,7 +749,7 @@ MAP_TEMPLATES: dict[str, dict] = {
         eps_floor=1e-16,
     ),
 
-    "predprey": dict(
+    "predprey_old": dict(
         type="step2d_ab",
         step2_func=predprey_step2_py,
         jac2_func=predprey_jac2_py,
@@ -932,6 +771,28 @@ MAP_TEMPLATES: dict[str, dict] = {
         eps_floor=1e-16,
     ),
     
+    "predprey": dict(
+        type="step2d_ab",
+        expr_x="abs_cap(r * x * (1.0 - x - y),1e6)",
+        expr_y="abs_cap(b * x * y,1e6)",
+        jac_exprs=(
+            "r * (1.0 - 2.0 * x - y)",  # dXdx
+            "-r * x",                   # dXdy
+            "b * y",                    # dYdx
+            "b * x",                    # dYdy
+        ),
+        domain=[-0.04, -0.6, 4.5, 6.6],
+        pardict=dict(
+            r="forced",                 # in impl2_ab_step: r = forced
+            b=3.569985,                 # baked in as constant
+        ),
+        x0=0.4,
+        y0=0.4,
+        trans=100,
+        iter=200,
+        eps_floor=1e-16,
+    ),
+
     "parasite": dict(
         type="step2d",
         step2_func=parasite_step2_py,
@@ -1901,17 +1762,17 @@ def _build_map(name: str) -> dict:
     
     if type == "step2d_ab":
         if "step2_func" in cfg and "jac2_func" in cfg:
-            new_cfg["step2"] = njit(STEP2_AB_SIG, cache=False, fastmath=False)(cfg["step2_func"])
-            new_cfg["jac2"]  = njit(JAC2_AB_SIG, cache=False, fastmath=False)(cfg["jac2_func"])
+            new_cfg["step2_ab"] = njit(STEP2_AB_SIG, cache=False, fastmath=False)(cfg["step2_func"])
+            new_cfg["jac2_ab"]  = njit(JAC2_AB_SIG, cache=False, fastmath=False)(cfg["jac2_func"])
         else:
             expr_x = cfg["expr_x"]
             expr_y = cfg["expr_y"]
-            new_cfg["step2"] = _funjit_2d_ab_step(expr_x,expr_y,pardict)
+            new_cfg["step2_ab"] = _funjit_2d_ab_step(expr_x,expr_y,pardict)
             if "jac_exprs" in cfg:
                 dXdx, dXdy, dYdx, dYdy = cfg["jac_exprs"]
             else:
                 dXdx, dXdy, dYdx, dYdy = _sympy_jacobian_2d(expr_x, expr_y)
-            new_cfg["jac2"] = _funjit_2d_ab_jag(dXdx,dXdy,dYdx,dYdy,pardict)
+            new_cfg["jac2_ab"] = _funjit_2d_ab_jag(dXdx,dXdy,dYdx,dYdy,pardict)
         new_cfg["eps_floor"] = cfg.get("eps_floor", 1e-16)
         return new_cfg
     
@@ -2158,7 +2019,7 @@ def _lyapunov_field_2d_ab(
 
                 if not np.isfinite(x_next) or not np.isfinite(y_next):
                     x_next = 0.5
-                    y_next = 0.0
+                    y_next = 0.5
 
                 norm = math.sqrt(vx * vx + vy * vy)
 
