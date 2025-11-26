@@ -2059,7 +2059,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\section{{\tt eqn 948} location 1}
+\section{{\tt eqn 948} location fig 9.32}
 
 \vskip 1cm 
 
@@ -2085,7 +2085,7 @@ python lyapunov1.py --spec \
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
-\section{{\tt eqn 948} location 2}
+\section{{\tt eqn 948} location fig 9.33}
 
 \vskip 1cm 
 
@@ -2110,7 +2110,7 @@ python lyapunov1.py --spec \
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
-\section{{\tt eqn 948} location 3}
+\section{{\tt eqn 948} location fig 9.34}
 
 \vskip 1cm 
 
@@ -2135,7 +2135,7 @@ python lyapunov1.py --spec \
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
-\section{{\tt eqn 948} location 4}
+\section{{\tt eqn 948} location fig 9.35}
 
 \vskip 1cm 
 
@@ -2161,7 +2161,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\section{{\tt eqn 948} location 5}
+\section{{\tt eqn 948} location fig 9.36}
 
 \vskip 1cm 
 
@@ -2187,7 +2187,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\section{{\tt eqn 948} location 6}
+\section{{\tt eqn 948} location fig 9.37}
 
 \vskip 1cm 
 
@@ -2213,7 +2213,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\section{{\tt eqn 948} location 7}
+\section{{\tt eqn 948} location fig 9.38}
 
 \vskip 1cm 
 
@@ -2225,7 +2225,7 @@ python lyapunov1.py --spec \
   colback=black,
   left=0pt,right=0pt,top=0pt,bottom=0pt
 ]{\includegraphics[width=18cm,height=18cm]{lyap948_7.png}}
-9.38 (fixme its A2B2)
+fig 9.38 (fixme its A2B2)
 \end{center}
 
 \vskip 1cm 
@@ -2236,36 +2236,12 @@ python lyapunov1.py --spec \
 --pix 5000 --out lyap948_7.png 
 @
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newpage
-\section{{\tt eqn 948} location 8}
-
-\vskip 1cm 
-
-\begin{center}
-\tcbox[
-  enhanced, 
-  boxrule=6pt, 
-  colframe=black, 
-  colback=black,
-  left=0pt,right=0pt,top=0pt,bottom=0pt
-]{\includegraphics[width=18cm,height=18cm]{lyap948_8.png}}
-fig 9.69
-\end{center}
-
-\vskip 1cm 
-
-<<, engine='bash', echo=TRUE, eval=run_code>>=
-python lyapunov1.py --spec \
-'eq948:A2B2,a:-0.4,b:1.5,c:0,d:1,ll:1.19:1.87,ul:2.19:2.96,lr:1.95:1.1728,rgb:mh_eq:1:firebrick:black:sunset' \
---pix 5000 --out lyap948_8.png 
-@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.39
 \newpage
-\section{{\tt eqn 948} location 9}
+\section{{\tt eqn 948} location fig 9.39}
 
 \vskip 1cm 
 
@@ -2291,7 +2267,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.40
 \newpage
-\section{{\tt eqn 948} location 10}
+\section{{\tt eqn 948} location fig 9.40}
 
 \vskip 1cm 
 
@@ -2317,7 +2293,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\section{{\tt eqn 948} location 11}
+\section{{\tt eqn 948} location fig 9.41}
 
 \vskip 1cm 
 
@@ -2329,7 +2305,7 @@ python lyapunov1.py --spec \
   colback=black,
   left=0pt,right=0pt,top=0pt,bottom=0pt
 ]{\includegraphics[width=18cm,height=18cm]{lyap948_11.png}}
-fid 9.41
+fig 9.41
 \end{center}
 
 \vskip 1cm 
@@ -2368,7 +2344,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.43
 \newpage
-\section{{\tt eqn 948} location 13}
+\section{{\tt eqn 948} location fig 9.43}
 
 \vskip 1cm 
 
@@ -2394,7 +2370,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.44
 \newpage
-\section{{\tt eqn 948} location 14}
+\section{{\tt eqn 948} location fig 9.44}
 
 \vskip 1cm 
 
@@ -2420,7 +2396,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.45
 \newpage
-\section{{\tt eqn 948} location 15}
+\section{{\tt eqn 948} location fig 9.45}
 
 \vskip 1cm 
 
@@ -2446,7 +2422,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.47
 \newpage
-\section{{\tt eqn 948} location 16}
+\section{{\tt eqn 948} location fig 9.47}
 
 \vskip 1cm 
 
@@ -2472,7 +2448,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.48
 \newpage
-\section{{\tt eqn 948} location 17}
+\section{{\tt eqn 948} location fig 9.48}
 
 \vskip 1cm 
 
@@ -2498,7 +2474,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.49
 \newpage
-\section{{\tt eqn 948} location 18}
+\section{{\tt eqn 948} location fig 9.49}
 
 \vskip 1cm 
 
@@ -2524,7 +2500,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.50
 \newpage
-\section{{\tt eqn 948} location 19}
+\section{{\tt eqn 948} location fig 9.50}
 
 \vskip 1cm 
 
@@ -2550,7 +2526,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.51
 \newpage
-\section{{\tt eqn 948} location 20}
+\section{{\tt eqn 948} location fig 9.51}
 
 \vskip 1cm 
 
@@ -2576,7 +2552,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.52
 \newpage
-\section{{\tt eqn 948} location 21}
+\section{{\tt eqn 948} location fig 9.52}
 
 \vskip 1cm 
 
@@ -2602,7 +2578,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.53
 \newpage
-\section{{\tt eqn 948} location 22}
+\section{{\tt eqn 948} location fig 9.53}
 
 \vskip 1cm 
 
@@ -2628,7 +2604,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.54
 \newpage
-\section{{\tt eqn 948} location 23}
+\section{{\tt eqn 948} location fig 9.54}
 
 \vskip 1cm 
 
@@ -2654,7 +2630,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.55
 \newpage
-\section{{\tt eqn 948} location 24}
+\section{{\tt eqn 948} location fig 9.55}
 
 \vskip 1cm 
 
@@ -2680,7 +2656,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.56
 \newpage
-\section{{\tt eqn 948} location 25}
+\section{{\tt eqn 948} location fig 9.56}
 
 \vskip 1cm 
 
@@ -2706,7 +2682,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.57
 \newpage
-\section{{\tt eqn 948} location 26}
+\section{{\tt eqn 948} location fig 9.57}
 
 \vskip 1cm 
 
@@ -2732,7 +2708,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.58
 \newpage
-\section{{\tt eqn 948} location 27}
+\section{{\tt eqn 948} location fig 9.58}
 
 \vskip 1cm 
 
@@ -2758,7 +2734,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.59
 \newpage
-\section{{\tt eqn 948} location 28}
+\section{{\tt eqn 948} location fig 9.59}
 
 \vskip 1cm 
 
@@ -2784,7 +2760,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.60
 \newpage
-\section{{\tt eqn 948} location 29}
+\section{{\tt eqn 948} location fig 9.60}
 
 \vskip 1cm 
 
@@ -2810,7 +2786,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.61
 \newpage
-\section{{\tt eqn 948} location 30}
+\section{{\tt eqn 948} location fig 9.61}
 
 \vskip 1cm 
 
@@ -2836,7 +2812,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.62
 \newpage
-\section{{\tt eqn 948} location 31}
+\section{{\tt eqn 948} location fig 9.62}
 
 \vskip 1cm 
 
@@ -2862,7 +2838,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.63
 \newpage
-\section{{\tt eqn 948} location 32}
+\section{{\tt eqn 948} location fig 9.63}
 
 \vskip 1cm 
 
@@ -2888,7 +2864,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.64
 \newpage
-\section{{\tt eqn 948} location 33}
+\section{{\tt eqn 948} location fig 9.64}
 
 \vskip 1cm 
 
@@ -2914,7 +2890,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.66
 \newpage
-\section{{\tt eqn 948} location 34}
+\section{{\tt eqn 948} location fig 9.66}
 
 \vskip 1cm 
 
@@ -2940,7 +2916,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.67
 \newpage
-\section{{\tt eqn 948} location 35}
+\section{{\tt eqn 948} location fig 9.67}
 
 \vskip 1cm 
 
@@ -2966,7 +2942,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.68
 \newpage
-\section{{\tt eqn 948} location 36}
+\section{{\tt eqn 948} fig 9.68}
 
 \vskip 1cm 
 
@@ -2977,7 +2953,7 @@ python lyapunov1.py --spec \
   colframe=black, 
   colback=black,
   left=0pt,right=0pt,top=0pt,bottom=0pt
-]{\includegraphics[width=18cm,height=18cm]{lyap948_36.png}}
+]{\includegraphics[width=18cm,height=18cm]{lyap948_fig968.png}}
 fig 9.68
 \end{center}
 
@@ -2986,13 +2962,39 @@ fig 9.68
 <<, engine='bash', echo=TRUE, eval=run_code>>=
 python lyapunov1.py --spec \
 'eq948:A2B2,a:0.1,b:2.3,c:0,d:1,ll:1.63:2.655,ul:2.655:3.68,lr:2.705:1.58,trans:100,iter:200,x0:0.7,rgb:mh_eq:1:firebrick:black:sunset' \
---pix 5000 --out lyap948_36.png
+--pix 5000 --out lyap948_fig968.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn 948} fig 9.69}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap948_8.png}}
+fig 9.69
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq948:A2B2,a:-0.4,b:1.5,c:0,d:1,ll:1.19:1.87,ul:2.19:2.96,lr:1.95:1.1728,rgb:mh_eq:1:firebrick:black:sunset' \
+--pix 5000 --out lyap948_8.png 
 @
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.70
 \newpage
-\section{{\tt eqn 948} location 36}
+\section{{\tt eqn 948} location fig 9.70}
 
 \vskip 1cm 
 
@@ -3018,7 +3020,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.71
 \newpage
-\section{{\tt eqn 948} location 37}
+\section{{\tt eqn 948} location fig 9.71}
 
 \vskip 1cm 
 
@@ -3044,7 +3046,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.72
 \newpage
-\section{{\tt eqn 948} location 38}
+\section{{\tt eqn 948} location fig 9.72}
 
 \vskip 1cm 
 
@@ -3070,7 +3072,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.73
 \newpage
-\section{{\tt eqn 948} location 39}
+\section{{\tt eqn 948} location fig 9.73}
 
 \vskip 1cm 
 
@@ -3096,7 +3098,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.74
 \newpage
-\section{{\tt eqn 948} location 40}
+\section{{\tt eqn 948} location fig 9.74}
 
 \vskip 1cm 
 
@@ -3123,7 +3125,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.75
 \newpage
-\section{{\tt eqn 948} location 41}
+\section{{\tt eqn 948} location fig 9.75}
 
 \vskip 1cm 
 
@@ -3149,7 +3151,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.76
 \newpage
-\section{{\tt eqn 948} location 42}
+\section{{\tt eqn 948} location fig 9.76}
 
 \vskip 1cm 
 
@@ -3175,7 +3177,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.77
 \newpage
-\section{{\tt eqn 948} location 43}
+\section{{\tt eqn 948} location fig 9.77}
 
 \vskip 1cm 
 
@@ -3201,7 +3203,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.78
 \newpage
-\section{{\tt eqn 948} location 44}
+\section{{\tt eqn 948} location fig 9.78}
 
 \vskip 1cm 
 
@@ -3227,7 +3229,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.79
 \newpage
-\section{{\tt eqn 948} location 45}
+\section{{\tt eqn 948} location fig 9.79}
 
 \vskip 1cm 
 
@@ -3253,7 +3255,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.80
 \newpage
-\section{{\tt eqn 948} location 46}
+\section{{\tt eqn 948} location fig 9.80}
 
 \vskip 1cm 
 
@@ -3279,7 +3281,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.81
 \newpage
-\section{{\tt eqn 948} location 47}
+\section{{\tt eqn 948} location fig 9.81}
 
 \vskip 1cm 
 
@@ -3305,7 +3307,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.82
 \newpage
-\section{{\tt eqn 948} location 48}
+\section{{\tt eqn 948} location fig 9.82}
 
 \vskip 1cm 
 
@@ -3331,7 +3333,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.83
 \newpage
-\section{{\tt eqn 948} location 49}
+\section{{\tt eqn 948} location fig 9.83}
 
 \vskip 1cm 
 
@@ -3357,7 +3359,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.84
 \newpage
-\section{{\tt eqn 948} location 50}
+\section{{\tt eqn 948} location fig 9.84}
 
 \vskip 1cm 
 
@@ -3383,7 +3385,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.85
 \newpage
-\section{{\tt eqn 948} location 51}
+\section{{\tt eqn 948} location fig 9.85}
 
 \vskip 1cm 
 
@@ -3409,7 +3411,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.86
 \newpage
-\section{{\tt eqn 948} location 52}
+\section{{\tt eqn 948} location fig 9.86}
 
 \vskip 1cm 
 
@@ -3435,7 +3437,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.87
 \newpage
-\section{{\tt eqn 948} location 53}
+\section{{\tt eqn 948} location fig 9.87}
 
 \vskip 1cm 
 
@@ -3461,7 +3463,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.88
 \newpage
-\section{{\tt eqn 948} location 54}
+\section{{\tt eqn 948} location fig 9.88}
 
 \vskip 1cm 
 
@@ -3487,7 +3489,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.89
 \newpage
-\section{{\tt eqn 948} location 55}
+\section{{\tt eqn 948} location fig 9.89}
 
 \vskip 1cm 
 
@@ -3513,7 +3515,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.90
 \newpage
-\section{{\tt eqn 948} location 56}
+\section{{\tt eqn 948} location fig 9.90}
 
 \vskip 1cm 
 
@@ -3539,7 +3541,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.91
 \newpage
-\section{{\tt eqn 948} location 57}
+\section{{\tt eqn 948} location fig 9.91}
 
 \vskip 1cm 
 
@@ -3565,7 +3567,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.92
 \newpage
-\section{{\tt eqn 948} location 58}
+\section{{\tt eqn 948} location fig 9.92}
 
 \vskip 1cm 
 
@@ -3591,7 +3593,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.93
 \newpage
-\section{{\tt eqn 948} location 59}
+\section{{\tt eqn 948} location fig 9.93}
 
 \vskip 1cm 
 
@@ -3617,7 +3619,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.94
 \newpage
-\section{{\tt eqn 948} location 60}
+\section{{\tt eqn 948} location fig 9.94}
 
 \vskip 1cm 
 
@@ -3643,7 +3645,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.95
 \newpage
-\section{{\tt eqn 948} location 61}
+\section{{\tt eqn 948} location fig 9.95}
 
 \vskip 1cm 
 
@@ -3669,7 +3671,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.96
 \newpage
-\section{{\tt eqn 948} location 62}
+\section{{\tt eqn 948} location fig 9.96}
 
 \vskip 1cm 
 
@@ -3695,7 +3697,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.97
 \newpage
-\section{{\tt eqn 948} location 63}
+\section{{\tt eqn 948} location fig 9.97}
 
 \vskip 1cm 
 
@@ -3721,7 +3723,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.98
 \newpage
-\section{{\tt eqn 948} location 64}
+\section{{\tt eqn 948} location fig 9.98}
 
 \vskip 1cm 
 
@@ -3747,7 +3749,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.99
 \newpage
-\section{{\tt eqn 948} location 65}
+\section{{\tt eqn 948} location fig 9.99}
 
 \vskip 1cm 
 
@@ -3773,7 +3775,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.100
 \newpage
-\section{{\tt eqn 948} location 66}
+\section{{\tt eqn 948} location fig 9.100}
 
 \vskip 1cm 
 
@@ -3799,7 +3801,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.101
 \newpage
-\section{{\tt eqn 948} location 67}
+\section{{\tt eqn 948} location fig 9.101}
 
 \vskip 1cm 
 
@@ -3825,7 +3827,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.102
 \newpage
-\section{{\tt eqn 948} location 68}
+\section{{\tt eqn 948} location fig 9.102}
 
 \vskip 1cm 
 
@@ -3851,7 +3853,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.103
 \newpage
-\section{{\tt eqn 948} location 69}
+\section{{\tt eqn 948} location fig 9.103}
 
 \vskip 1cm 
 
@@ -3877,7 +3879,7 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.104
 \newpage
-\section{{\tt eqn 948} location 70}
+\section{{\tt eqn 948} location fig 9.104}
 
 \vskip 1cm 
 
@@ -3901,9 +3903,40 @@ python lyapunov1.py --spec \
 @
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% fig 9.104
+\newpage
+\section{{\tt eqn 948} location fig 9.104, marvel}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap948_70_marvel.png}}
+fig 9.104, marvel palettes
+\end{center}
+
+\vskip 1cm 
+
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq948:A2B2,a:-1,b:2.25,c:0,d:1,ll:1.171:1.499,ul:1.659:1.977,lr:1.489:1.1743,trans:100,iter:200,x0:0.5,rgb:multi:${glp("^marvel",9)}' \
+--pix 2000 --out lyap948_70_marvel.png --thumb 5000
+@
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fig 9.105
 \newpage
-\section{{\tt eqn 948} location 71}
+\section{{\tt eqn 948} location fig 9.105}
 
 \vskip 1cm 
 
