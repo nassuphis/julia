@@ -356,6 +356,107 @@ python lyapunov1.py --spec \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
+\section{{\tt econ}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap_fig810.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'econ882:BA:-3:1.65:-1:2.5,gamma:1,ll:-1:1.65,ul:-3:1.65,lr:-1:2.5,rgb:mh_eq:1:white:black:black' \
+--pix 5000 --out lyap_fig810.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt fishery}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap_fishery_fig813.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'fishery,ll:-0.033:0,ul:-0.033:0.105,lr:0:0,x0:0.5,y0:0.5,trans:5,iter:20,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out lyap_fishery_fig813.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt fishery}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap_fishery_fig812.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'fishery:0:-20:10:10,ad:first,ap:second,bd:-0.005,cd:-0.05,bp:-0.04,cp:0.007,x0:0.5,y0:0.5,trans:100,iter:200,rgb:multi:bauhaus_primary_13' \
+--pix 5000 --out lyap_fishery_fig812.png
+@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eq827}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap_817_eq827.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq827:B5AA,ll:-15:-4.3,ul:-15:11,lr:35:-4.3,rgb:mh_eq:0.5:black:black:white' \
+--pix 5000 --out lyap_817_eq827.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
 \section{{\tt cardiac}}
 
 \vskip 1cm 
@@ -692,6 +793,31 @@ python lyapunov1.py --spec \
   colframe=black, 
   colback=black,
   left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap9_1.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'degn,k:1,ll:0.2:-1.15,ul:0.2:1.15,lr:2.9:-1.15,rgb:mh_eq:1:firebrick:darkgrey:sunset' \
+--pix 5000 --out lyap9_1.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt degn nn}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
 ]{\includegraphics[width=18cm,height=18cm]{lyap9.png}}
 \end{center}
 
@@ -699,9 +825,515 @@ python lyapunov1.py --spec \
 
 <<, engine='bash', echo=TRUE, eval=run_code>>=
  python lyapunov1.py --spec \
-'degn:-7.5:-2:7.5:2,a:0.1,b:1e8,rgb:mh:0.25:firebrick:darkgrey:sunset' \
+'degn_nn:-7.5:-2:7.5:2,a:0.1,b:1e8,rgb:mh:0.25:firebrick:darkgrey:sunset' \
 --pix 10000 --out lyap9.png --thumb 5000
 @
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn941}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap941.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eqn941,ll:-10:-2.9,ul:-10:2.9,lr:10:-2.9,rgb:mh_eq:1:firebrick:darkgrey:sunset' \
+--pix 5000 --out lyap941.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn941} r vs K}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap941_a.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eqn941,b:1.075,k:first,r:second,ll:-0.7:-3.9,ul:-0.7:3.9,lr:0.7:-3.9,rgb:mh_eq:1:firebrick:darkgrey:sunset' \
+--pix 5000 --out lyap941_a.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn950}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap950.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq950:BA,b:1.9,x0:1.5,ll:-3.8:0,ul:-3.8:6,lr:3.8:0,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out lyap950.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn951}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eq951.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq951:B8A8:-3:-0.75:-1:0,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out eq951.png
+@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn952}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap952.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq952:AB,b:3.2,x0:0.5,ll:-1.52:1.33,ul:1.33:4.18,lr:1.33:-1.52,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out lyap952.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn959}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap959.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq959:AB,b:1.16,x0:0.5,ll:-0.025:-2.3,ul:-2.3:-0.025,lr:4.2:1.925,trans:100,iter:200,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out lyap959.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn965}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap965.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+ython lyapunov1.py --spec \
+'eq965:A4B4,b:1,x0:0.5,ll:-15.555:3.8982,ul:-3.1422:16.126,lr:3.7129:-15.6612,trans:500,iter:500,rgb:multi:debug_saw_luma_13' \
+--pix 5000 --out lyap965.png  
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn970}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap970_fig9138.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq970:AB,ll:6.2879:-4.697,ul:6.2879:3.447,lr:9.4334:-4.697,b:1.5,x0:0.5,trans:50,iter:100,rgb:multi:marvel_fantasticfour_long' \
+--pix 5000 --out lyap970_fig9138.png
+@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn971}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap971_fig9139.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq971:AAABBB,ll:-2.7:-1.08,ul:1.08:2.7,lr:-1.08:-2.7,b:1.5,x0:0.5,trans:25,iter:50,rgb:multi:marvel_fantasticfour_long' \
+--pix 5000 --out lyap971_fig9139.png
+@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn974}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap974_fig9142.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+ python lyapunov1.py --spec \
+'eq974:A6BB,ll:-2.62:0.36,ul:-2.62:26.04,lr:2.6:0.36,b:1.8,x0:0.5,trans:100,iter:200,rgb:multi:marvel_fantasticfour_long' \
+--pix 5000 --out lyap974_fig9142.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn978}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap978_fig9147.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq978:AB,ll:0:0,ul:0:2,lr:2:0,b:0.5,x0:0.5,trans:500,iter:1000,rgb:mh_eq:1:black:black:white' \ 
+--pix 5000 --out lyap978_fig9147.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn979}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap979_fig9149.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq979:0:0:4:4,x0:0.5,trans:100,iter:200,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out lyap979_fig9149.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn979}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap979_fig9148.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+ python lyapunov1.py --spec \
+'eq979_ab:AB,ll:2.7741:3.1152,ul:2.7785:2.6996,lr:2.5144:3.1125,b:1,x0:1.5,trans:100,iter:200,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out lyap979_fig9148.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn980}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap980_fig9150.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+ python lyapunov1.py --spec \
+ 'eq980_ab:AB,b:0.9,x0:1.4,trans:100,iter:200,ll:-5.5388:2.20,ul:-5.5388:3.6217,lr:-4.94297:2.20,rgb:multi:marvel_fantasticfour_long' \
+ --pix 5000 --out lyap980_fig9150.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn980}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap980_fig9151.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq980,ll:0.26:1.36,ul:0.26:3.85,lr:1.44:1.36,x0:0.5,trans:100,iter:200,rgb:multi:marvel_fantasticfour_long' \
+--pix 5000 --out lyap980_fig9151.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn981}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap981_fig9153.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq981:AB,ll:-4:-12,ul:-12:4,lr:12:-4,b:2,x0:0.5,trans:200,iter:200,rgb:multi:marvel_fantasticfour_long' \
+--pix 5000 --out lyap981_fig9153.png
+@
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn985}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap985_fig9160.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq985:AB,ll:2.0292:2.3214,ul:2.5354:2.832,lr:2.3177:2.0354,b:0.5,x0:0.5,trans:100,iter:200,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out lyap985_fig9160.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn968}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap968.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq968:A3B3,b:1,x0:0.9,ll:2.21248:1.53388,ul:2.21248:1.61899,lr:2.33097:1.53388,trans:100,iter:100,rgb:multi:debug_saw_luma_13' \
+--pix 5000 --out lyap968.png
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn953}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap953.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq953:A3B3,b:4,x0:0.5,ll:1.0913:1.2253,ul:1.2444:1.3784,lr:1.2253:1.0913,trans:400,iter:400,rgb:mh_eq:1:black:black:white' \
+--pix 5000 --out lyap953.png  
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{{\tt eqn961}}
+
+\vskip 1cm 
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{lyap961.png}}
+\end{center}
+
+\vskip 1cm 
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'eq961:A5B5,b:5,x0:0.5,ll:1.3341:4.7792,ul:3.2843:6.7294,lr:4.7795:1.3338,trans:25,iter:50,rgb:mh_eq:0.33:black:black:white' \
+--pix 5000 --out lyap961.png 
+@
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

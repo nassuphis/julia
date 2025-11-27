@@ -492,196 +492,6 @@ def _funjit_2d_jag(dxdx:str, dxdy:str, dydx:str, dydy:str, dict):
     return jit
 
 # ---------------------------------------------------------------------------
-# Map templates: custom functions
-# ---------------------------------------------------------------------------
-
-def parasite_step2_py(x, y, s, r, param):
-    EXP_MAX = 50.0
-    STATE_MAX = 1e6
-    H, P = x, y
-    a, rj = r,s
-    K = param[0]
-    invK = 1.0 / K
-    
-    F = rj * (1.0 - H * invK) - a * P
-    F = min(abs(F),EXP_MAX)*sign(F)
-    expF = math.exp(F)
-
-    G = -a * P
-    G = min(abs(G),EXP_MAX)*sign(G)
-    E = math.exp(G)
-
-    H_next = H * expF
-    P_next = H * (1.0 - E)    
-
-    H = min(abs(H_next),STATE_MAX)*sign(H_next)
-    P = min(abs(P_next),STATE_MAX)*sign(P_next)
-
-    if not (np.isfinite(H) and np.isfinite(P)): 
-        H, P = 1.0, 1.0
-
-    return H, P
-
-
-def parasite_jac2_py(x, y, s, r, param):
-
-    EXP_MAX = 50.0
-    H, P = x, y
-    a, rj = r,s
-    K = param[0]
-    invK = 1.0 / K
-
-    F = rj * (1.0 - H * invK) - a * P
-    F = min(abs(F),EXP_MAX)*sign(F)
-
-    expF = math.exp(F)
-
-    G = -a * P
-    G = min(abs(G),EXP_MAX)*sign(G)
-    E = math.exp(G)
-
-    # Jacobian
-    dHdH = expF * (1.0 - rj * H * invK)
-    dHdP = -a * H * expF
-    dPdH = 1.0 - E
-    dPdP = H * a * E
-    
-    return dHdH, dHdP, dPdH, dPdP
-
-def predprey_step2_py(x, y, forced):
-    a_param = forced
-    b_param = 3.569985
-    x_next = a_param * x * (1.0 - x - y)
-    y_next = b_param * x * y
-    x_next = min(abs(x_next),1e6)*sign(x_next)
-    y_next = min(abs(y_next),1e6)*sign(y_next)
-    if not (np.isfinite(x_next) and np.isfinite(y_next)):
-        x_next = 0.5
-        y_next = 0.5
-    return x_next, y_next
-
-
-def predprey_jac2_py(x, y, forced):
-    a_param = forced
-    b_param = 3.569985
-    dxdx = a_param * (1.0 - 2.0 * x - y)
-    dxdy = -a_param * x
-    dydx = b_param * y
-    dydy = b_param * x
-    return dxdx, dxdy, dydx, dydy
-
-def cardiac_step2_py(x, y, s, r, param):
-    """
-    Guevara cardiac map (Eq. 8.4), embedded in 2D with a dummy y:
-
-        x_{n+1} = A - B1 * exp(-t / tau1) - B2 * exp(-t / tau2)
-        t       = k * r_p - x_n
-
-    Here we interpret:
-        r = t_min   (vertical axis parameter before transpose/flip)
-        s = r_p     (stimulation period, horizontal axis)
-
-    The dummy y is kept at 0 and does not affect the dynamics.
-    """
-    # parameters
-    A    = param[0]
-    B1   = param[1]
-    B2   = param[2]
-    tau1 = param[3]
-    tau2 = param[4]
-
-    tmin = r        # r-argument is t_min
-    r_p  = s        # s-argument is the period r
-
-    # guard against r_p <= 0 to avoid division by zero
-    if r_p <= 0.0:
-        r_eff = 1e-12
-    else:
-        r_eff = r_p
-
-    # k_n = floor((t_min + x_n)/r) + 1  so that k_n r - x_n > t_min
-    k = math.floor((tmin + x) / r_eff) + 1.0
-    t = k * r_eff - x
-
-    EXP_MAX = 50.0
-
-    F1 = -t / tau1
-    if F1 > EXP_MAX:
-        F1 = EXP_MAX
-    elif F1 < -EXP_MAX:
-        F1 = -EXP_MAX
-    e1 = math.exp(F1)
-
-    F2 = -t / tau2
-    if F2 > EXP_MAX:
-        F2 = EXP_MAX
-    elif F2 < -EXP_MAX:
-        F2 = -EXP_MAX
-    e2 = math.exp(F2)
-
-    x_next = A - B1 * e1 - B2 * e2
-    if not np.isfinite(x_next):
-        x_next = x   # fall back to previous value if something blows up
-
-    # dummy y-dimension, strongly contracting / irrelevant
-    y_next = 0.0
-
-    return x_next, y_next
-
-
-def cardiac_jac2_py(x, y, s, r, param):
-    """
-    Jacobian for the cardiac map, consistent with cardiac_step2_py.
-    We embed the 1D derivative into the (x,x) entry and kill the y-dimension.
-
-    x_{n+1} = A - B1 e^{-t/τ1} - B2 e^{-t/τ2},   t = k r_p - x
-    treating k as constant when differentiating (piecewise-smooth approx).
-    """
-    A    = param[0]
-    B1   = param[1]
-    B2   = param[2]
-    tau1 = param[3]
-    tau2 = param[4]
-
-    tmin = r        # r-argument is t_min
-    r_p  = s        # s-argument is the period r
-
-    if r_p <= 0.0:
-        r_eff = 1e-12
-    else:
-        r_eff = r_p
-
-    k = math.floor((tmin + x) / r_eff) + 1.0
-    t = k * r_eff - x
-
-    EXP_MAX = 50.0
-
-    F1 = -t / tau1
-    if F1 > EXP_MAX:
-        F1 = EXP_MAX
-    elif F1 < -EXP_MAX:
-        F1 = -EXP_MAX
-    e1 = math.exp(F1)
-
-    F2 = -t / tau2
-    if F2 > EXP_MAX:
-        F2 = EXP_MAX
-    elif F2 < -EXP_MAX:
-        F2 = -EXP_MAX
-    e2 = math.exp(F2)
-
-    # dt/dx = -1 (k treated as constant), so
-    # d x_next / d x = -(B1/τ1) e^{-t/τ1} - (B2/τ2) e^{-t/τ2}
-    dXdx = -(B1 / tau1) * e1 - (B2 / tau2) * e2
-
-    dXdy = 0.0
-    dYdx = 0.0
-    dYdy = 0.0   # y-dimension is dead
-
-    return dXdx, dXdy, dYdx, dYdy
-
-
-# ---------------------------------------------------------------------------
 # Map templates: add / tweak here to define all maps
 # ---------------------------------------------------------------------------
 
@@ -699,75 +509,40 @@ def cardiac_jac2_py(x, y, s, r, param):
 # or both the second and the first parameters are
 # scanned
 
-# Discontinuous logistic map (eq. 9.6) used by 'dlog'
-# x_{n+1} = r_n x_n (1 - x_n)                   if x_n > 0.5
-#         = r_n x_n (1 - x_n) + ¼(α - 1)(r_n-2) else
-_DLOG_EXPR = (
-    "r*x*(1-x)*step(x-0.5) + "
-    "(r*x*(1-x) + 0.25*(a-1)*(r-2))*(1-step(x-0.5))"
-)
 
 MAP_TEMPLATES: dict[str, dict] = {
 
     "cardiac": dict(
-        # Guevara cardiac map, Eq. (8.4):
-        #   x_{n+1} = A - B1 e^{-t_n/τ1} - B2 e^{-t_n/τ2}
-        #   t_n = k_n r - x_n, k_n minimum integer with t_n > t_min
-        #
-        # We treat this as a 2-D map with a dummy y-dimension so that we
-        # can scan both r and t_min across the tile while still using
-        # the generic 2-D Lyapunov kernel.
-        #
-        # Axis conventions for this map:
-        #   - pre-grid horizontal (i, 'a' axis)  -> t_min in [a0, a1]
-        #   - pre-grid vertical   (j, 'b' axis)  -> r     in [b0, b1]
-        # After your transpose+flip in the CLI the final image shows
-        #   x-axis : r
-        #   y-axis : t_min
-        type="step2d",
-        step2_func=cardiac_step2_py,
-        jac2_func=cardiac_jac2_py,
-        # domain = [tmin0, r0, tmin1, r1]
-        # matching Fig. 8.3: r ∈ [0,150], t_min ∈ [20,140]
+        type   = "step2d",
         domain=[20.0, 0.0, 140.0, 150.0],
-        # params: [A, B1, B2, tau1, tau2]
-        # (you can override A,B1,B2,tau1 via a:,b:,c:,d: if you like;
-        # tau2 stays at the default unless you edit the map)
         pardict=dict(
-            r  = "second",
-            s  = "first",
-            a=270.0,
-            b=2441,
-            c=90.02, 
-            d=19.6,
-            e=200.5,
+            tmin   = "second",
+            r_p    = "first",
+            A      = 270.0,
+            B1     = 2441,
+            B2     = 90.02, 
+            tau1   = 19.6,
+            tau2   = 200.5,
+            r_eff  = "max(r_p,1e-12)",
+            k      = "math.floor((tmin + x) / r_eff) + 1.0",
+            t      = "k * r_eff - x",
+            F1     = "abs_cap(-t/tau1,50)",
+            e1     = "exp(F1)",
+            F2     = "abs_cap(-t/tau2,50)", 
+            e2     = "exp(F2)",
+        ),
+        expr_x = "A - B1 * e1 - B2 * e2",
+        expr_y = "y",
+        jac_exprs=(
+            "-(B1 / tau1) * e1 - (B2 / tau2) * e2",
+            "0.0",
+            "0.0",
+            "0.0"
         ),
         x0=5.0,       # initial x_n (duration)
         y0=0.0,       # dummy y
         trans=100,    # n_prev
         iter=200,     # n_max
-        eps_floor=1e-16,
-    ),
-
-    "predprey_old": dict(
-        type="step2d_ab",
-        step2_func=predprey_step2_py,
-        jac2_func=predprey_jac2_py,
-        # domain: [A0, B0, A1, B1]  (same as old MAP_DEFAULT_DOMAIN)
-        domain=[-0.04, -0.6, 4.5, 6.6],
-        # params: we store b in param[1]; param[0] is unused
-        pardict=dict(
-            r="forced",
-            a=0.0,
-            b= 3.569985,
-            c=0.0, 
-            d=0.0,
-            e=0.0,
-        ),
-        x0=0.4,
-        y0=0.4,
-        trans=100,
-        iter=200,
         eps_floor=1e-16,
     ),
     
@@ -776,15 +551,15 @@ MAP_TEMPLATES: dict[str, dict] = {
         expr_x="abs_cap(r * x * (1.0 - x - y),1e6)",
         expr_y="abs_cap(b * x * y,1e6)",
         jac_exprs=(
-            "r * (1.0 - 2.0 * x - y)",  # dXdx
-            "-r * x",                   # dXdy
-            "b * y",                    # dYdx
-            "b * x",                    # dYdy
+            "r * (1.0 - 2.0 * x - y)", # dXdx
+            "-r * x", # dXdy
+            "b * y",  # dYdx
+            "b * x",  # dYdy
         ),
         domain=[-0.04, -0.6, 4.5, 6.6],
         pardict=dict(
-            r="forced",                 # in impl2_ab_step: r = forced
-            b=3.569985,                 # baked in as constant
+            r="forced",
+            b=3.569985,
         ),
         x0=0.4,
         y0=0.4,
@@ -794,30 +569,31 @@ MAP_TEMPLATES: dict[str, dict] = {
     ),
 
     "parasite": dict(
+        # parasite, k:3.1, rgb:mh:0.25:red:black:yellow
         type="step2d",
-        step2_func=parasite_step2_py,
-        jac2_func=parasite_jac2_py,
-        #expr_x="x * exp( r*(1.0 - x/a) - s*y )",
-
-        #expr_y="x * (1.0 - exp(-s*y))",
-        domain=[-0.1, -0.1, 4, 7],
+        expr_x="abs_cap(x * exp( abs_cap( r * (1.0 - x/K) - a*y, 50.0 ) ),1e6)",
+        expr_y="abs_cap(x * (1.0 - exp( abs_cap( -a*y, 50.0 ) ) ),1e6)",
+        jac_exprs=(
+        "exp( abs_cap( r * (1.0 - x/K) - a*y, 50.0 ) ) * (1.0 - r * x / K)",
+        "-a * x * exp( abs_cap( r * (1.0 - x/K) - a*y, 50.0 ) )",
+        "1.0 - exp( abs_cap( -a*y, 50.0 ) )",
+        "x * a * exp( abs_cap( -a*y, 50.0 ) )",
+        ),
+        domain=[-0.1, -0.1, 4.0, 7.0],
         pardict=dict(
-            r  = "second",
-            s  = "first",
-            a=2.1,
-            b= 0.0,
-            c=0.0, 
-            d=0.0,
-            e=0.0,
+            r="first",  
+            a="second", 
+            K=3.1,
         ),
         x0=0.5,
         y0=0.5,
         trans=200,
         iter=800,
-        eps_floor=1e-16,  # <- matches original parasite kernel
+        eps_floor=1e-16,
     ),
 
     "kicked": dict(
+        # kicked:BA, ll:-3.215:-2.45, ul:-6.35:0.9325, lr:1.4325:1.85744, a:0.3, b:3
         type="step2d_ab",
         expr_x=(
             "mod1("
@@ -847,39 +623,29 @@ MAP_TEMPLATES: dict[str, dict] = {
     "henzi": dict( #henon-lozi map
         # fig 9.11 :  henzi:BA,ll:1.483:2.35,ul:2.15:1.794,lr:-0.35:0.15,gamma:0.25
         type="step2d_ab",
-        # FIXME: classification needs a single string
-        # something like "1D", "2D", "2Dab" 
         # FIXME: add a default "seq" key
         # seq="AB" or somthing
         expr_x="1-s*abs(x)+y",
         expr_y="a*x",
-        # FIXME: add a sub_expr dictionary that is 
-        # expanded into the formula prior to scypy
-        # things inside [...] are looked up 
-        # and replaced [xpr1]+ [xpr2]
-        # sub_expr={'xpr1':'a+b+c', 'xpr2':'abs(x+b)'}
         domain=[-10,-10,10,10],
         pardict=dict(
             s="forced",
             a=0.994,
         ),
-        #FIXME: add pnames=["a","b","c","d"] so formuli can match source
         x0 = 0.4,
         y0 = 0.4,
-        # FIXME: make this a list init=[0.4,0.4]
-        # so the values can be specced like init:0.4:0.4
         trans = 100,
         iter = 200,
     ),
 
     "adbash": dict( #adams-bashworth
         type="step2d_ab",
-        expr_x="x+(a/2)*(3*s*x*(1-x)-s*y*(1-y))",
-        expr_y="y",
+        expr_x="x+(h/2)*(3*r*x*(1-x)-r*y*(1-y))",
+        expr_y="x",
         domain=[-5,-5,5,5],
         pardict=dict(
-            s  = "forced",
-            a=1.0,
+            r  = "forced",
+            h  = 1.0,
         ),
         x0 = 0.5,
         y0 = 0.5,
@@ -887,24 +653,98 @@ MAP_TEMPLATES: dict[str, dict] = {
         iter = 200,
     ),
 
-    "degn": dict( #degn's map
+    "degn_nn": dict( #NN's degn's map
         type="step2d",
-        # text is "b vs r"
-        # s is the LHS of the text 
-        # r is the RHS of the text
-        expr_x="s*(x-0.5)+0.5+a*sin(2*pi*r*y)",
-        expr_y="(y+s*(x-0.5)+0.5+a*sin(2*pi*r*y)*mod1(b/s))",
+        expr_x="s*(x-0.5)+0.5+a*sin(2*pi*r*y) ",
+        expr_y="y+s*(x-0.5)+0.5+a*sin(2*pi*r*y)*mod1(b/s)",
         domain=[-2,-5,2,5],
         pardict=dict(
-            r  = "second",
-            s  = "first",
-            a=0.1,
-            b= 1.0,
+            r  = "first",
+            s  = "second",
+            a  = 0.1,
+            b  = 1e8,
         ),
-        x0 = 0.4,
-        y0 = 0.4,
+        x0    = 0.4,
+        y0    = 0.4,
         trans = 100,
-        iter = 300,
+        iter  = 300,
+    ),
+
+    "degn": dict(  # Degn's map, Eqs. (9.20, 9.21)
+        type="step2d",
+        expr_common=dict(
+            x1="c*(x - 0.5) + 0.5 + rho*sin(2*pi*r*y)"
+        ),
+        expr_x="{x1}",
+        expr_y="Mod(y + ({x1}), k/b)",
+        jac_exprs=(
+            "c",                                   # dXdx
+            "2*pi*rho*r*cos(2*pi*r*y)",            # dXdy
+            "c",                                   # dYdx
+            "1 + 2*pi*rho*r*cos(2*pi*r*y)",        # dYdy
+        ),
+        domain=[0.2, -1.15, 2.9, 1.15],
+        pardict=dict(
+            r="first",    # vertical axis: r
+            b="second",   # horizontal axis: b
+            rho=0.1,      # fixed R
+            k=1.0,
+            c="b",     
+        ),
+        x0=0.4,
+        y0=0.4,
+        trans=100,
+        iter=300,
+    ),
+
+    "eqn941": dict(  # Eqs. (9.41, 9.42)
+        type="step2d",
+        expr_x="Mod( x + 2*pi*k + b*sin(x) + r*cos(y) , 2*pi )",
+        expr_y="Mod( y + 2*pi*omega, 2*pi )",
+        # Jacobian, treating 'mod' as identity for derivatives
+        jac_exprs=(
+            "+1 + b*cos(x)",  # dXdx
+            "-r * sin(y)",    # dXdy
+            "0",              # dYdx
+            "1",              # dYdy
+        ),
+        # Default rectangle matching the caption (b, r)
+        domain=[0.2, -1.15, 2.9, 1.15],
+        pardict=dict(
+            r="first",     # vertical axis: r
+            b="second",    # horizontal axis: b
+            k=0.28,        # fixed R
+            omega="(pow(5,0.5)-1)/2",
+        ),
+        x0=0.1,
+        y0=0.5,
+        trans=100,
+        iter=300,
+    ),
+
+    "eqn941_ab": dict(  # Eqs. (9.41, 9.42)
+        type="step2d_ab",
+        expr_x="Mod( x + 2*pi*k + b*sin(x) + r*cos(y) , 2*pi )",
+        expr_y="Mod( y + 2*pi*omega, 2*pi )",
+        # Jacobian, treating 'mod' as identity for derivatives
+        jac_exprs=(
+            "+1 + b*cos(x)",  # dXdx
+            "-r * sin(y)",    # dXdy
+            "0",              # dYdx
+            "1",              # dYdy
+        ),
+        # Default rectangle matching the caption (b, r)
+        domain=[0.2, -1.15, 2.9, 1.15],
+        pardict=dict(
+            r="forced", # vertical axis: r
+            b=1.075,    # horizontal axis: b
+            k=0.28,        # fixed R
+            omega="(pow(5,0.5)-1)/2",
+        ),
+        x0=0.1,
+        y0=0.5,
+        trans=100,
+        iter=300,
     ),
 
     "henon": dict(
@@ -953,9 +793,9 @@ MAP_TEMPLATES: dict[str, dict] = {
         pardict=dict(
             r  = "second",
             s  = "first",
-            a=3.0,
-            b= 2.0,
-            c=0.0, 
+            a  = 3.0,
+            b  = 2.0,
+            c  = 0.0, 
         ),
         x0=0.5,
         y0=0.0,
@@ -963,7 +803,6 @@ MAP_TEMPLATES: dict[str, dict] = {
         iter=500,
         # optionally: manual Jacobian override
     ),
-
 
     "logistic2d": dict(
         type="step2d",
@@ -974,23 +813,20 @@ MAP_TEMPLATES: dict[str, dict] = {
         expr_y="y",
         domain=[0.66,-0.05,3,1.66],  # r0,s0,r1,s1
         pardict=dict(
-            r  = "second",
             s  = "first",
+            r  = "second",
         ),
-        x0=0.5,
-        y0=1.0,
-        trans=100,
-        iter=300,
+        x0 = 0.5,
+        y0 = 1.0,
+        trans = 100,
+        iter = 300,
         # optionally: manual Jacobian override
     ),
-
 
     "logistic": dict( # Classic logistic
         expr="r * x * (1.0 - x)",
         domain=[2.5, 2.5, 4.0, 4.0],  # A0, B0, A1, B1
-        pardict=dict(
-            r  = "forced",
-        ),
+        pardict=dict(r  = "forced"),
         x0=0.5,
         trans=DEFAULT_TRANS,
         iter=DEFAULT_ITER,
@@ -999,9 +835,7 @@ MAP_TEMPLATES: dict[str, dict] = {
     "sine": dict( # Sine map (classical Lyapunov variant: r sin(pi x))
         expr="r * sin(pi * x)",
         domain=[0.0, 2.0, 0.0, 2.0],
-        pardict=dict(
-            r  = "forced",
-        ),
+        pardict=dict(r  = "forced"),
         x0=0.5,
         trans=DEFAULT_TRANS,
         iter=DEFAULT_ITER,
@@ -1010,9 +844,7 @@ MAP_TEMPLATES: dict[str, dict] = {
     "tent": dict(  # Tent map
         expr="r*x*(1-step(x-0.5)) + r*(1-x)*step(x-0.5)",
         domain=[0.0, 0.0, 2.0, 2.0],
-        pardict=dict(
-            r  = "forced",
-        ),
+        pardict=dict(r  = "forced"),
         x0=0.5,
         trans=DEFAULT_TRANS,
         iter=DEFAULT_ITER,
@@ -1072,6 +904,113 @@ MAP_TEMPLATES: dict[str, dict] = {
         x0=5.0,
         trans=100,   # n_prev
         iter=200,    # n_max
+    ),
+
+    "econ882": dict(  # Equations (8.19, 8.20), interdependent economies
+        # x_{n+1} = μ x_n (1 - x_n) + γ y_n
+        # y_{n+1} = μ y_n (1 - y_n) + γ x_n
+        type="step2d_ab",
+        expr_x="mu * x * (1.0 - x) + gamma * y",
+        expr_y="mu * y * (1.0 - y) + gamma * x",
+        jac_exprs=(
+            "mu * (1.0 - 2.0 * x)",  # dXdx
+            "gamma",                 # dXdy
+            "gamma",                 # dYdx
+            "mu * (1.0 - 2.0 * y)",  # dYdy
+        ),
+        # B vs A plane: (A,B) = (mu_A, mu_B)
+        # LL:(2, 2.40625), UL:(2.24375, 2.65), LR:(2.40625, 2)
+        domain=[2.0, 2.40625, 2.24375, 2.65, 2.40625, 2.0],
+        pardict=dict(
+            mu="forced",     # A/B-forced parameter μ
+            gamma=0.43,      # γ₁ = γ₂ = 0.43
+        ),
+        x0=0.4,
+        y0=0.4,
+        trans=100,
+        iter=300,
+        eps_floor=1e-16,
+    ),
+
+    "fishery": dict(  # Equations (8.23, 8.24)
+        type="step2d",
+
+        # x = D (crab biomass), y = P (pots)
+        expr_x="x * exp(ad + bd*x + cd*y)",
+        expr_y="y * exp(ap + bp*y + cp*x)",
+
+        # Jacobian:
+        # let g1 = aD + bD x + cD y; f1 = x e^{g1}
+        # dXdx = e^{g1} + x e^{g1} bD = e^{g1} * (1 + bD x)
+        # dXdy = x e^{g1} cD
+        # let g2 = aP + bP y + cP x; f2 = y e^{g2}
+        # dYdx = y e^{g2} cP
+        # dYdy = e^{g2} + y e^{g2} bP = e^{g2} * (1 + bP y)
+        jac_exprs=(
+            "exp(ad + bd*x + cd*y) * (1 + bd*x)",       # dXdx
+            "x * cd * exp(ad + bd*x + cd*y)",           # dXdy
+            "y * cp * exp(ap + bp*y + cp*x)",           # dYdx
+            "exp(ap + bp*y + cp*x) * (1 + bp*y)",       # dYdy
+        ),
+
+        # c_P vs c_D plane: (first, second) = (cD, cP)
+        # LL:(-0.033, 0), UL:(-0.033, 0.105), LR:(0, 0)
+        # → domain = [A0,B0,A1,B1] = [ -0.033, 0, 0, 0.105 ]
+        domain=[-0.033, 0.0, 0.0, 0.105],
+
+        pardict=dict(
+            cd="first",   # horizontal axis
+            cp="second",  # vertical axis
+            ad=1.0,
+            bd=-0.005,
+            ap=0.5,
+            bp=-0.04,
+        ),
+
+        x0=0.5,
+        y0=0.5,
+        trans=5,    # n_prev
+        iter=20,    # n_max
+        eps_floor=1e-16,
+    ),
+
+    "eq827": dict(  # Equation (8.27) – Angelini antiferromagnetic element
+        # piecewise:
+        # region1: x < -1/3
+        # region2: -1/3 <= x <= 1/3
+        # region3: x > 1/3
+        expr=(
+            # region1: x < -1/3  ->  step(-1/3 - x)
+            "(-r/3.0) * exp(b*(x + 1.0/3.0)) * step(-1.0/3.0 - x) + "
+            # region3: x > 1/3   ->  step(x - 1/3)
+            "( r/3.0) * exp(b*(1.0/3.0 - x)) * step(x - 1.0/3.0) + "
+            # region2: middle, complement of the two above
+            "r*x * (1.0 - step(-1.0/3.0 - x) - step(x - 1.0/3.0))"
+        ),
+
+        # derivative df/dx (same partition, ignoring derivative of step discontinuities)
+        deriv_expr=(
+            # d/dx of region1 part
+            "(-r/3.0) * b * exp(b*(x + 1.0/3.0)) * step(-1.0/3.0 - x) + "
+            # d/dx of region3 part
+            "(-r/3.0) * b * exp(b*(1.0/3.0 - x)) * step(x - 1.0/3.0) + "
+            # d/dx of region2: r
+            "r * (1.0 - step(-1.0/3.0 - x) - step(x - 1.0/3.0))"
+        ),
+
+        # Fig. 8.17 caption:
+        # "Equation (8.27): b = 1. B versus A. r:B5AA B5AA..., nprev = 100, nmax = 200, x0 = 1.
+        #  D-shading. LL:(−15, −4.3), UL:(−15, 11.), LR:(35, −4.3)"
+        domain=[-15.0, -4.3, -15.0, 11.0],  # will be overridden by ll/ul/lr in spec
+
+        pardict=dict(
+            r="forced",  # A/B-forced parameter
+            b=1.0,       # fixed b = 1 for this figure
+        ),
+
+        x0=1.0,
+        trans=100,
+        iter=200,
     ),
 
     "nn1": dict(
@@ -1264,16 +1203,13 @@ MAP_TEMPLATES: dict[str, dict] = {
 
     "dlog": dict( # same as eq96, but manual derivative to check sympy's derivation
         # Map step = eq. (9.6)
-        expr=_DLOG_EXPR, # FIXME: add a local expansion step, no globals
-        deriv_expr="r * (1.0 - 2.0 * (" + _DLOG_EXPR + "))",
+        expr="dlog",
+        deriv_expr="r * (1.0 - 2.0 * (dlog))",
         domain=[2.5,2.5,4, 4],
         pardict=dict(
             r  = "forced",
             a  = 0.4,
-            b  = 0.0,
-            c  = 0.0, 
-            d  = 0.0,
-            e  = 0.0,
+            dlog = "r*x*(1-x)*step(x-0.5)+(r*x*(1-x)+0.25*(a-1)*(r-2))*(1-step(x-0.5))",
         ),  
         x0=0.6,
         trans=100,
@@ -1411,6 +1347,188 @@ MAP_TEMPLATES: dict[str, dict] = {
         iter=200,
     ),
 
+    "eq950": dict(
+        # x_{n+1} = [cosh(r x_n)] mod (2/b)
+        expr="Mod(cosh(r*x), 2/b)",
+
+        # derivative wrt x, ignoring the outer Mod
+        deriv_expr="r * sinh(r*x)",
+
+        # default A/B window for the forced parameter r
+        # (adjust from the spec to match the book's figure)
+        domain=[0.0, 0.0, 4.0, 4.0],
+
+        pardict=dict(
+            r  = "forced",  # A/B sequence drives r
+            b  = 1.0,       # override with b:... in the spec
+        ),
+
+        x0=0.5,
+        trans=100,
+        iter=300,
+    ),
+
+    "eq951": dict(
+        expr_common=dict(
+            S="sin(1-x)",
+            C="cos((x-r)**2)",
+        ),
+        # x_{n+1} = b r exp(S^3 C) - 1
+        expr="b * r * exp({S}**3 * {C}) - 1",
+
+        # derivative f'(x) = b r exp(S^3 C) * ( -3 S^2 cos(1-x) C
+        #                                     -2 (x-r) S^3 sin((x-r)^2) )
+        deriv_expr=(
+            "b * r * exp({S}**3 * {C}) * ("
+            " -3*{S}**2 * cos(1-x) * {C}"
+            " -2*(x-r) * {S}**3 * sin((x-r)**2)"
+            ")"
+        ),
+
+        domain=[0.0, 0.0, 4.0, 4.0],
+        pardict=dict(
+            r  = "forced", # A/B‑forced parameter
+            b  = 1.0,      # default b, override with b:... in the spec if needed
+        ),
+        x0=0.5,
+        trans=100,
+        iter=100,
+    ),
+
+    "eq952": dict(
+        # x_{n+1} = b sin[(x_n - r)^3] e^{-(x_n - r)^2}
+        expr=(
+            "b * sin(pow(x - r, 3)) * exp(-pow(x - r, 2))"
+        ),
+
+        # derivative wrt x, ignoring any forcing / AB structure
+        deriv_expr=(
+            "b * exp(-pow(x - r, 2)) * ("
+            "  3*pow(x - r, 2)*cos(pow(x - r, 3))"
+            " - 2*(x - r)*sin(pow(x - r, 3))"
+            ")"
+        ),
+
+        # choose a default (A,B) window for r_A,r_B;
+        # tweak in the spec to match the book's figure
+        domain=[-4.0, -4.0, 4.0, 4.0],
+
+        pardict=dict(
+            r  = "forced",   # driven parameter (A/B sequence)
+            b  = 3.2,        # amplitude; override with b:...
+        ),
+
+        x0=0.5,
+        trans=25,
+        iter=50,
+    ),
+
+    "eq953": dict(
+        # x_{n+1} = b sin^4(x_n - r)
+        expr="b * pow(sin(x - r), 4)",
+
+        # derivative wrt x (ignore any forcing structure)
+        deriv_expr="4 * b * pow(sin(x - r), 3) * cos(x - r)",
+
+        # default (A,B) window for r_A,r_B; tweak in spec if needed
+        domain=[0.0, 0.0, 4.0, 4.0],
+
+        pardict=dict(
+            r="forced",   # driven parameter (A/B sequence)
+            b=1.0,        # amplitude; override with b:... in spec
+        ),
+
+        x0=0.5,
+        trans=400,
+        iter=400,
+    ),
+
+    "eq954": dict(
+        # x_{n+1} = cos(x_n + r) cos(1 - x_n)
+        expr="cos(x + r) * cos(b - x)",
+
+        # derivative wrt x
+        deriv_expr=(
+            "-sin(x + r) * cos(b - x)"
+            " + cos(x + r) * sin(b - x)"
+        ),
+
+        # default (A,B) window for r_A, r_B – tune from spec as needed
+        domain=[0.0, 0.0, 4.0, 4.0],
+
+        pardict=dict(
+            r="forced",   # r is the driven A/B parameter
+            b=1.0,
+        ),
+
+        x0=0.5,
+        trans=500,
+        iter=1000,
+    ),
+
+    "eq955": dict(
+        expr=(
+            "b * pow(x - 1, 2) * pow(sin(r - x), 2)"
+        ),
+       deriv_expr=(
+            "2*b*(x - 1)*pow(sin(r - x), 2)"
+            " - 2*b*pow(x - 1, 2)*sin(r - x)*cos(r - x)"
+        ),
+        domain=[0.0, 0.0, 4.0, 4.0],
+        pardict=dict(
+            r="forced",   # A/B sequence drives 'r'
+            b=0.8,        # amplitude parameter (override with b:…)
+        ),
+        x0=0.5,
+        trans=100,
+        iter=500,
+    ),
+
+    "eq959": dict(  # Eq. (9.59)
+        # x_{n+1} = (b + r) * exp(sin(1 - x)^3 * cos((x - r)^2)) - 1
+        expr=(
+            "(b + r) * exp(pow(sin(1 - x), 3) * cos(pow(x - r, 2))) - 1"
+        ),
+
+        # derivative wrt x
+        deriv_expr=(
+            "(b + r) * exp(pow(sin(1 - x), 3) * cos(pow(x - r, 2))) * ("
+            " -3*pow(sin(1 - x), 2)*cos(1 - x)*cos(pow(x - r, 2))"
+            " -2*(x - r)*pow(sin(1 - x), 3)*sin(pow(x - r, 2))"
+            ")"
+        ),
+
+        # default A/B window (you’ll override via ll/ul/lr for this figure)
+        domain=[-1.0, -1.0, 1.0, 1.0],
+
+        pardict=dict(
+            r="forced",   # r is A/B-forced
+            b=0.6,        # for Fig. 9.152
+        ),
+
+        x0=0.5,
+        trans=100,
+        iter=200,
+    ),
+
+    "eq961": dict(  # Eq. (9.61)
+        expr=(
+            "b * cos(exp(-pow(x - r, 2)))"
+        ),
+        deriv_expr=(
+            "2 * b * (x - r) * exp(-pow(x - r, 2)) "
+            "* sin(exp(-pow(x - r, 2)))"
+        ),
+        domain=[0.0, 0.0, 4.0, 4.0],
+        pardict=dict(
+            r="forced",   # driven parameter (A/B sequence)
+            b=5.0,        # amplitude; override with b:...
+        ),
+        x0=0.5,
+        trans=25,
+        iter=50,
+    ),
+
     "eq962": dict(
         expr="b * r*r * exp( sin( pow(1 - x, 3) ) ) - 1",
         domain=[0.0, 0.0, 4.0, 4.0],
@@ -1508,51 +1626,104 @@ MAP_TEMPLATES: dict[str, dict] = {
     ),
 
     "eq970": dict(
+        # x_{n+1} = b * exp(cos(1 - x) * sin(pi/2) + sin(r))
         expr="b * exp( cos(1 - x) * sin(pi/2) + sin(r) )",
+
+        # derivative wrt x:
+        # f'(x) = b * exp(cos(1-x) + sin(r)) * sin(1-x)
+        deriv_expr=(
+            "b * exp( cos(1 - x) * sin(pi/2) + sin(r) ) * sin(1 - x)"
+        ),
+
         domain=[0.0, 0.0, 4.0, 4.0],
+
         pardict=dict(
-            r  = "forced",
-            b  = 1.0,
-        ),  
+            r="forced",   # A/B-driven
+            b=1.0,        # override to 1.5 for this fig
+        ),
+
         x0=0.5,
         trans=DEFAULT_TRANS,
         iter=DEFAULT_ITER,
     ),
 
-    "eq971": dict(
-        expr="b * r * exp( pow( sin(x - r), 4 ) )",
+    "eq971": dict(  # Eq. (9.71)
+        # x_{n+1} = b * r * exp( sin(x - r)^4 )
+        expr=(
+            "b * r * exp(pow(sin(x - r), 4))"
+        ),
+
+        # derivative wrt x:
+        # let s = sin(x - r);  f(x) = b r e^{s^4}
+        # f'(x) = b r e^{s^4} * 4 s^3 cos(x - r)
+        deriv_expr=(
+            "4 * b * r * exp(pow(sin(x - r), 4))"
+            " * pow(sin(x - r), 3) * cos(x - r)"
+        ),
+
+        # default window – overridden by ll/ul/lr in specs
         domain=[0.0, 0.0, 4.0, 4.0],
+
         pardict=dict(
-            r  = "forced",
-            b  = 0.5,
-        ),  
+            r="forced",   # A/B-driven parameter r
+            b=0.5,        # placeholder; will be overridden to 1.5
+        ),
+
         x0=0.5,
-        trans=DEFAULT_TRANS,
-        iter=DEFAULT_ITER,
+        trans=25,
+        iter=50,
     ),
 
-    "eq972": dict(
-        expr="b * r * exp( pow( sin(1 - x), 3 ) )",
+    "eq972": dict(  # Eq. (9.72)
+        # x_{n+1} = b * r * exp( sin(1 - x)^3 )
+        expr=(
+            "b * r * exp(pow(sin(1 - x), 3))"
+        ),
+
+        # derivative wrt x
+        deriv_expr=(
+            "-3 * b * r * exp(pow(sin(1 - x), 3))"
+            " * pow(sin(1 - x), 2) * cos(1 - x)"
+        ),
+
+        # default A/B window for r_A, r_B (tune from spec to match the plate)
         domain=[0.0, 0.0, 4.0, 4.0],
+
         pardict=dict(
-            r  = "forced",
-            b  = 0.5,
-        ),  
+            r="forced",   # driven parameter (A/B sequence)
+            b=1.0,        # amplitude; override with b:... in spec
+        ),
+
         x0=0.5,
-        trans=DEFAULT_TRANS,
-        iter=DEFAULT_ITER,
+        trans=100,
+        iter=300,
     ),
 
-    "eq973": dict(
-        expr="b * r * pow( sin(b*x + r*r), 2 ) * pow( cos(b*x - r*r), 2 )",
-        domain=[0.0, 0.0, 4.0, 4.0],
+    "eq973": dict(  # Eq. (9.73)
+        # x_{n+1} = b * r * sin^2(b x + r^2) * cos^2(b x - r^2)
+        expr=(
+            "b * r * pow(sin(b*x + r*r), 2) * pow(cos(b*x - r*r), 2)"
+        ),
+
+        # derivative wrt x
+        deriv_expr=(
+            "2*pow(b, 2)*r*("
+            " sin(b*x + r*r)*cos(b*x + r*r)*pow(cos(b*x - r*r), 2)"
+            " - pow(sin(b*x + r*r), 2)*sin(b*x - r*r)*cos(b*x - r*r)"
+            ")"
+        ),
+
+        # default (A,B) window for (r_A,r_B); you'll override via ll/ul/lr
+        domain=[-2.5, -2.5, 2.5, 2.5],
+
         pardict=dict(
-            r  = "forced",
-            b  = 0.5,
-        ),  
+            r="forced",   # A/B-driven parameter r
+            b=1.1,        # for Fig. 9.141; override with b:... if desired
+        ),
+
         x0=0.5,
-        trans=DEFAULT_TRANS,
-        iter=DEFAULT_ITER,
+        trans=125,
+        iter=250,
     ),
 
     "eq974": dict(
@@ -1603,52 +1774,231 @@ MAP_TEMPLATES: dict[str, dict] = {
         iter=DEFAULT_ITER,
     ),
 
-    "eq978": dict(
-        expr="r*sin(pi*r)*sin(pi*(x-b))",
-        domain=[0.0, 0.0, 4.0, 4.0],
+    "eq978": dict(  # Eq. (9.78)
+        # x_{n+1} = r * sin(pi*r) * sin(pi*(x - b))
+        expr=(
+            "r * sin(pi*r) * sin(pi*(x - b))"
+        ),
+
+        # derivative wrt x (r treated as parameter)
+        deriv_expr=(
+            "r * sin(pi*r) * pi * cos(pi*(x - b))"
+        ),
+
+        # A/B window: A,B ∈ [0,2] (LL:(0,0), UL:(0,2), LR:(2,0))
+        domain=[0.0, 0.0, 2.0, 2.0],
+
         pardict=dict(
-            r  = "forced",
-            b  = 0.5,
-        ),  
+            r="forced",   # A/B-driven parameter
+            b=0.5,        # fixed b for Fig. 9.147 (override with b:... if you like)
+        ),
+
         x0=0.5,
-        trans=DEFAULT_TRANS,
-        iter=DEFAULT_ITER,
+        trans=500,
+        iter=1000,
+    ),
+
+    "eq979_old": dict(
+        type="step2d",
+
+        # (x, y) -> (x', y'), parameters (first, second) = (b, r)
+        expr_x=(
+            "b*r*pow(sin(b*x + r*r), 2) * pow(cos(b*x - r*r), 2) - r"
+        ),
+        expr_y="y",   # dummy y-dimension
+
+        # Jacobian: only dXdx is non-zero
+        jac_exprs=(
+            "2*pow(b, 2)*r*("
+            "  sin(b*x + r*r)*cos(b*x + r*r)"
+            "  *pow(cos(b*x - r*r - r), 2)"
+            " - pow(sin(b*x + r*r), 2)"
+            "  *sin(b*x - r*r - r)*cos(b*x - r*r - r)"
+            ")",  # dXdx
+            "0",   # dXdy
+            "0",   # dYdx
+            "1",   # dYdy
+        ),
+
+        # (b,r) window matching the caption: LL:(0,0), UL:(0,7.66), LR:(4.3,0)
+        # i.e. b in [0,4.3], r in [0,7.66]
+        domain=[0.0, 0.0, 4.3, 7.66],
+
+        pardict=dict(
+            b="first",   # horizontal axis: b
+            r="second",  # vertical axis: r
+        ),
+
+        x0=0.5,
+        y0=0.0,
+        trans=100,   # n_prev
+        iter=200,    # n_max
     ),
 
     "eq979": dict(
-        expr="b*r*pow(sin(b*x+r*r), 2 )*pow( cos(b*x-r*r-r),2)",
-        domain=[0.0, 0.0, 4.0, 4.0],
+        type="step2d",
+
+        # x_{n+1} = b*r*sin^2(b*x + r^2)*cos^2(b*x - r^2) - r
+        expr_x=(
+            "b*r*pow(sin(b*x + r*r), 2) * pow(cos(b*x - r*r), 2) - r"
+        ),
+        expr_y="0",  # dummy y-dimension
+
+        jac_exprs=(
+            # dXdx
+            "2*pow(b, 2)*r*("
+            "  sin(b*x + r*r)*cos(b*x + r*r)*pow(cos(b*x - r*r), 2)"
+            " - pow(sin(b*x + r*r), 2)*sin(b*x - r*r)*cos(b*x - r*r)"
+            ")",
+            "0",  # dXdy
+            "0",  # dYdx
+            "0",  # dYdy
+        ),
+
+        # (b,r) window as before (from caption)
+        # LL:(0,0), UL:(0,7.66), LR:(4.3,0)
+        domain=[0.0, 0.0, 4.3, 7.66],
+
         pardict=dict(
-            r  = "forced",
-            b  = 0.5,
-        ),  
+            b="first",   # horizontal axis
+            r="second",  # vertical axis
+        ),
+
         x0=0.5,
-        trans=DEFAULT_TRANS,
-        iter=DEFAULT_ITER,
+        y0=0.0,
+        trans=100,
+        iter=200,
+    ),
+
+    "eq979_ab": dict(
+        type="step2d_ab",
+
+        # x_{n+1} = b*r*sin^2(b*x + r^2)*cos^2(b*x - r^2) - r
+        expr_x=(
+            "b*r*pow(sin(b*x + r*r), 2) * pow(cos(b*x - r*r), 2) - r"
+        ),
+        expr_y="0",  # dummy y-dimension
+
+        jac_exprs=(
+            # dXdx
+            "2*pow(b, 2)*r*("
+            "  sin(b*x + r*r)*cos(b*x + r*r)*pow(cos(b*x - r*r), 2)"
+            " - pow(sin(b*x + r*r), 2)*sin(b*x - r*r)*cos(b*x - r*r)"
+            ")",
+            "0",  # dXdy
+            "0",  # dYdx
+            "0",  # dYdy
+        ),
+
+        # (b,r) window as before (from caption)
+        # LL:(0,0), UL:(0,7.66), LR:(4.3,0)
+        domain=[0.0, 0.0, 4.3, 7.66],
+
+        pardict=dict(
+            r="forced",  # vertical axis
+            b=1,   # horizontal axis
+            
+        ),
+
+        x0=1.5,
+        y0=0.0,
+        trans=100,
+        iter=200,
     ),
 
     "eq980": dict(
-        expr="b*r*pow(sin(b*x+r*r),2)*pow(cos(b*x-r*r),2)-1",
-        domain=[0.0, 0.0, 4.0, 4.0],
+        type="step2d",
+
+        # (x, y) -> (x', y'), parameters (first, second) = (r, b)
+        expr_x=(
+            "b*r*pow(sin(b*x + r*r), 2) * pow(cos(b*x - r*r), 2) - 1"
+        ),
+        expr_y="0",   # dummy y-dimension
+
+        # Jacobian: only dXdx is non-zero; y-dimension is dead
+        jac_exprs=(
+            "2*pow(b, 2)*r*("  # dXdx
+            "  sin(b*x + r*r)*cos(b*x + r*r)*pow(cos(b*x - r*r), 2)"
+            " - pow(sin(b*x + r*r), 2)*sin(b*x - r*r)*cos(b*x - r*r)"
+            ")",
+            "0",  # dXdy
+            "0",  # dYdx
+            "0",  # dYdy
+        ),
+
+        # default rectangle for (r,b); you’ll override via ll/ul/lr
+        domain=[0.26, 1.36, 1.44, 3.85],
+
         pardict=dict(
-            r  = "forced",
-            b  = 0.5,
-        ),  
+            r="first",   # horizontal axis: r
+            b="second",  # vertical axis: b
+        ),
+
         x0=0.5,
-        trans=DEFAULT_TRANS,
-        iter=DEFAULT_ITER,
+        y0=0.0,
+        trans=100,   # n_prev
+        iter=200,    # n_max
     ),
 
-    "eq981": dict(
-        expr="b/(2+sin(mod1(x))-r)",
-        domain=[0.0, 0.0, 4.0, 4.0],
+    "eq980_ab": dict(
+        type="step2d_ab",
+
+        # (x, y) -> (x', y'), parameters (first, second) = (r, b)
+        expr_x=(
+            "b*r*pow(sin(b*x + r*r), 2) * pow(cos(b*x - r*r), 2) - 1"
+        ),
+        expr_y="y",   # dummy y-dimension
+
+        # Jacobian: only dXdx is non-zero; y-dimension is dead
+        jac_exprs=(
+            "2*pow(b, 2)*r*("  # dXdx
+            "  sin(b*x + r*r)*cos(b*x + r*r)*pow(cos(b*x - r*r), 2)"
+            " - pow(sin(b*x + r*r), 2)*sin(b*x - r*r)*cos(b*x - r*r)"
+            ")",
+            "0",  # dXdy
+            "0",  # dYdx
+            "1",  # dYdy
+        ),
+
+        # default rectangle for (r,b); you’ll override via ll/ul/lr
+        domain=[0.26, 1.36, 1.44, 3.85],
+
         pardict=dict(
-            r  = "forced",
-            b  = 1.0,
-        ),  
+            r="forced",   # horizontal axis: r
+            b=0.9,  # vertical axis: b
+        ),
+
         x0=0.5,
-        trans=DEFAULT_TRANS,
-        iter=DEFAULT_ITER,
+        y0=0.0,
+        trans=100,   # n_prev
+        iter=200,    # n_max
+    ),
+
+
+
+    "eq981": dict(
+        # x_{n+1} = b / ( 2 + sin( (x mod 1) - r ) )
+        expr=(
+            "b * pow(2 + sin(mod1(x) - r), -1)"
+        ),
+
+        # derivative wrt x, treating mod1 as locally identity:
+        # f'(x) = -b * cos((x mod 1) - r) / (2 + sin((x mod 1) - r))^2
+        deriv_expr=(
+            "-b * cos(mod1(x) - r) * pow(2 + sin(mod1(x) - r), -2)"
+        ),
+
+        # default A/B window (you'll override per-figure)
+        domain=[0.0, 0.0, 4.0, 4.0],
+
+        pardict=dict(
+            r="forced",   # A/B sequence drives r
+            b=1.0,        # will override to b=2 for Fig. 9.153
+        ),
+
+        x0=0.5,
+        trans=100,
+        iter=200,
     ),
 
     "eq982": dict(
@@ -1688,15 +2038,25 @@ MAP_TEMPLATES: dict[str, dict] = {
     ),
 
     "eq985": dict(
-        expr="b*exp(tan(r*x)-x)",
+        # x_{n+1} = b * exp(tan(r*x) - x)
+        expr="b * exp(tan(r*x) - x)",
+
+        # derivative wrt x:
+        # f'(x) = b * exp(tan(r*x) - x) * (r * sec^2(r*x) - 1)
+        deriv_expr=(
+            "b * exp(tan(r*x) - x) * (r * pow(sec(r*x), 2) - 1)"
+        ),
+
         domain=[0.0, 0.0, 4.0, 4.0],
+
         pardict=dict(
-            r  = "forced",
-            b  = 1.0,
-        ),  
+            r="forced",   # A/B-forced parameter
+            b=1.0,        # override via b:...
+        ),
+
         x0=0.5,
-        trans=DEFAULT_TRANS,
-        iter=DEFAULT_ITER,
+        trans=100,      # caption uses n_prev = 100
+        iter=200,       # caption uses n_max = 200
     ),
 
     "eq986": dict(
@@ -1716,6 +2076,12 @@ MAP_TEMPLATES: dict[str, dict] = {
 # Lazy map cache: compiled maps live here, built on first use.
 MAPS: dict[str, dict] = {}
 
+def substitute_common(x,d):
+    if d is None:
+        return x 
+    x=x.format(**d)
+    return x
+
 
 def _build_map(name: str) -> dict:
     """
@@ -1734,12 +2100,12 @@ def _build_map(name: str) -> dict:
     new_cfg["type"] = type
 
     if type == "step1d":
-        expr = cfg["expr"]
+        expr = substitute_common(cfg["expr"],cfg.get("expr_common"))
         new_cfg["step"]  =  _funjit_1d(expr,pardict)
         if "deriv_expr" in cfg:
-            deriv_expr = cfg["deriv_expr"]
+            deriv_expr = substitute_common(cfg["deriv_expr"],cfg.get("expr_common"))
         else:
-            deriv_expr =  _sympy_deriv(expr) 
+            deriv_expr =  _sympy_deriv(substitute_common(cfg.get("expr"),cfg.get("expr_common"))) 
         new_cfg["deriv"] =  _funjit_1d(deriv_expr,pardict)
         new_cfg["eps_floor"] = cfg.get("eps_floor", 1e-16)
         return new_cfg
@@ -1749,11 +2115,15 @@ def _build_map(name: str) -> dict:
             new_cfg["step2"] = njit(STEP2_SIG, cache=False, fastmath=False)(cfg["step2_func"])
             new_cfg["jac2"]  = njit(JAC2_SIG, cache=False, fastmath=False)(cfg["jac2_func"])
         else:
-            expr_x = cfg["expr_x"]
-            expr_y = cfg["expr_y"]
+            expr_x = substitute_common( cfg["expr_x"], cfg.get("expr_common") )
+            expr_y = substitute_common( cfg["expr_y"], cfg.get("expr_common") )
             new_cfg["step2"] = _funjit_2d_step(expr_x,expr_y,pardict)
             if "jac_exprs" in cfg:
                 dXdx, dXdy, dYdx, dYdy = cfg["jac_exprs"]
+                dXdx = substitute_common( dXdx, cfg.get("expr_common") )
+                dXdy = substitute_common( dXdy, cfg.get("expr_common") )
+                dYdx = substitute_common( dYdx, cfg.get("expr_common") )
+                dYdy = substitute_common( dYdy, cfg.get("expr_common") )
             else:
                 dXdx, dXdy, dYdx, dYdy = _sympy_jacobian_2d(expr_x, expr_y)
             new_cfg["jac2"] = _funjit_2d_jag(dXdx,dXdy,dYdx,dYdy,pardict)
@@ -1765,11 +2135,15 @@ def _build_map(name: str) -> dict:
             new_cfg["step2_ab"] = njit(STEP2_AB_SIG, cache=False, fastmath=False)(cfg["step2_func"])
             new_cfg["jac2_ab"]  = njit(JAC2_AB_SIG, cache=False, fastmath=False)(cfg["jac2_func"])
         else:
-            expr_x = cfg["expr_x"]
-            expr_y = cfg["expr_y"]
+            expr_x = substitute_common( cfg["expr_x"], cfg.get("expr_common") )
+            expr_y = substitute_common( cfg["expr_y"], cfg.get("expr_common") )
             new_cfg["step2_ab"] = _funjit_2d_ab_step(expr_x,expr_y,pardict)
             if "jac_exprs" in cfg:
                 dXdx, dXdy, dYdx, dYdy = cfg["jac_exprs"]
+                dXdx = substitute_common( dXdx, cfg.get("expr_common") )
+                dXdy = substitute_common( dXdy, cfg.get("expr_common") )
+                dYdx = substitute_common( dYdx, cfg.get("expr_common") )
+                dYdy = substitute_common( dYdy, cfg.get("expr_common") )
             else:
                 dXdx, dXdy, dYdx, dYdy = _sympy_jacobian_2d(expr_x, expr_y)
             new_cfg["jac2_ab"] = _funjit_2d_ab_jag(dXdx,dXdy,dYdx,dYdy,pardict)
@@ -1786,8 +2160,8 @@ def _get_map(name: str) -> dict:
     Return compiled map config for 'name', building it on first use.
     """
     cfg = MAPS.get(name)
-    if cfg is not None:
-        return cfg
+    #if cfg is not None:
+    #    return cfg
     # build + cache
     print(f"Compiling map '{name}'")
     cfg = _build_map(name)
@@ -3737,8 +4111,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
         else:
             param_value = value
         pardict[key] = param_value
-    _build_map(map_name)
-    map_cfg =_get_map(map_name)
+    map_cfg = _build_map(map_name)
     type = map_cfg.get("type", "step1d")
 
      # --- domain + sequence parsing ---
