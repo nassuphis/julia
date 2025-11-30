@@ -2802,6 +2802,151 @@ def hist_fixed_bins_inplace(bins, x, xmin, xmax):
             bins[j] += 1
 
 
+
+@njit
+def compute_orbit(step, x0, A, B, seq, n_transient, n_iter, xs):
+    """
+    step:   njit'ed map f(x, r)
+    seq:    int8/int32 array with forcing sequence
+    xs:     preallocated float64[n_iter]
+    """
+    seq_len = seq.size
+    x = x0
+
+    # transient / burn-in
+    for n in range(n_transient):
+        force = seq[n % seq_len] & 1
+        forced_param = A if force == 0 else B
+        x = step(x, forced_param)
+        if not math.isfinite(x):
+            x = 0.5
+
+    # main orbit, store all x's
+    for n in range(n_iter):
+        force = seq[n % seq_len] & 1
+        forced_param = A if force == 0 else B
+        x = step(x, forced_param)
+        if not math.isfinite(x):
+            x = 0.5
+        xs[n] = x
+
+@njit
+def transform_values(vcalc, xs, vs):
+    """
+    xs: input orbit values, length N
+    vs: output buffer, length N (in-place target)
+    """
+    N = xs.size
+
+    if N == 0:
+        return
+
+    if vcalc == 0:
+        # value
+        for n in range(N):
+            vs[n] = xs[n]
+
+    elif vcalc == 1:
+        # slope: x - px
+        px = xs[0]
+        for n in range(1, N):
+            x = xs[n]
+            vs[n] = x - px
+            px = x
+        vs[0] = vs[1] # preserve range
+
+    elif vcalc == 2:
+        # convexity: x - 2px + ppx
+        if N < 3:
+            for n in range(N):
+                vs[n] = 0.0
+            return
+        ppx = xs[0]
+        px  = xs[1]
+        for n in range(2, N):
+            x = xs[n]
+            vs[n] = x - 2.0 * px + ppx
+            ppx = px
+            px = x
+        vs[0] = vs[2] # preserve range
+        vs[1] = vs[2]
+
+    elif vcalc == 3:
+        # curvature
+        if N < 3:
+            for n in range(N):
+                vs[n] = 0.0
+            return
+        ppx = xs[0]
+        px  = xs[1]
+        for n in range(2, N):
+            x = xs[n]
+            num = math.fabs(x - 2.0 * px + ppx)
+            denom = math.pow(1.0 + (x - px)**2, 3/2)
+            if denom > 0.0:
+                v = num / denom
+            else:
+                v = 0.0
+            vs[n] = v
+            ppx = px
+            px = x
+        vs[0] = vs[2] # preserve range
+        vs[1] = vs[2]
+
+    elif vcalc == 4:
+        # product: x * px
+        px = xs[0]
+        for n in range(1, N):
+            x = xs[n]
+            vs[n] = x * px
+            px = x
+        vs[0]=vs[1] # preserve range
+
+    elif vcalc == 5:
+        # EW mean over x: v_n = 0.95 v_{n-1} + 0.05 x_n
+        v = xs[0]
+        for n in range(1, N):
+            x = xs[n]
+            v = v * 0.95 + x * 0.05
+            vs[n] = v
+        vs[0]=vs[1] # preserve range
+
+    elif vcalc == 6:
+        # EW ratio: v = u / w with EW updates on u,w
+        px = xs[0]
+        u = 0.0
+        w = 0.0
+        v = 0.0
+        for n in range(1, N):
+            x = xs[n]
+            dx = x - px
+            u = 0.9 * u + 0.1 * dx
+            w = 0.9 * w + 0.1 * abs(dx)
+            if w > 0.0:
+                v = u / w
+            # else keep old v
+            vs[n] = v
+            px = x
+        vs[0]=vs[1] # preserve range
+
+    elif vcalc == 7:
+        for n in range(N):
+            vs[n] = -abs(xs[n])
+
+    elif vcalc == 8:
+        for n in range(N):
+            #frac, integer = math.modf(xs[n])
+            vs[n] = xs[n]%1
+
+    else:
+        # default: just x
+        for n in range(N):
+            vs[n] = xs[n]
+    return
+
+
+
+
 @njit(cache=False, fastmath=False, parallel=True)
 def _hist_field_1d(
     step,
@@ -2812,100 +2957,61 @@ def _hist_field_1d(
     n_transient,
     n_iter,
     vcalc=0,
-    hcalc=0
+    hcalc=0,
+    hbins=32,
 ):
-    seq_len = seq.size
+
     out = np.empty((pix, pix), dtype=np.float64)
     denom = 1.0 if pix <= 1 else (pix - 1.0)
 
     for j in prange(pix):
-        vs = np.zeros(n_iter,dtype=np.float64)
-        bins = np.empty(n_iter, dtype=np.int64)
+        xs = np.empty(n_iter, dtype=np.float64)
+        vs = np.empty(n_iter, dtype=np.float64)
+        hist = np.zeros(hbins, dtype=np.int64)
         for i in range(pix):
             A, B = map_logical_to_physical(domain, i / denom, j / denom)
-
-            # burn-in
-            x, px, ppx = x0, x0, x0
-            for n in range(n_transient):
-                force = seq[n % seq_len] & 1
-                forced_param = A if force == 0 else B
-                x = step(x, forced_param)
-                if not np.isfinite(x):
-                    x = 0.5
-                ppx=px
-                px=x
-
-            vmin = 1e6
-            vmax = -1e6
-            v,u,w = x,x-px,math.fabs(x-px)
+            compute_orbit(step, x0, A, B, seq, n_transient, n_iter, xs)
+            transform_values(vcalc, xs, vs)
+            # get vmin/vmax for this orbit:
+            vmin = 1e300
+            vmax = -1e300
             for n in range(n_iter):
-                force = seq[n % seq_len] & 1
-                forced_param = A if force == 0 else B
-                x = step(x, forced_param)
-                if not np.isfinite(x): x = 0.5
-                if vcalc==0: #value
-                    v=x
-                elif vcalc==1: #slope
-                    v=x-px
-                elif vcalc==2: #convexity
-                    v=x-2*px+ppx
-                elif vcalc==3: #curvature
-                    numerator = math.fabs(x-2*px+ppx)
-                    denominator = math.pow((1+(x-px)**2),3/2)
-                    if denominator>0:
-                        v = numerator/denominator 
-                    else: 
-                        v=0
-                elif vcalc==4:
-                    v = x * px
-                elif vcalc==5:
-                    if n==0:
-                        v = x
-                    else:
-                        v = v * 0.95 + x * 0.05
-                elif vcalc==6:
-                    u = 0.9 * u + 0.1 * (x-px)
-                    w = 0.9 * w + 0.1 * math.fabs(x-px)
-                    if w>0: 
-                        v = u/w
-                    else: 
-                        v = v
-                else:
-                    v=x
-                vmin=min(v,vmin)
-                vmax=max(v,vmax)
-                vs[n]=v
-                ppx=px
-                px=x
-
-            hist_fixed_bins_inplace(bins, vs, vmin, vmax)
+                v = vs[n]
+                if v < vmin:
+                    vmin = v
+                if v > vmax:
+                    vmax = v
+            # histogram + stat:
+            for k in range(hist.size):
+                hist[k] = 0  # reset
+            hist_fixed_bins_inplace(hist, vs, vmin, vmax)
 
             e=0.0
             if hcalc==0: # stdev
-                e = np.std(bins)
+                e = np.std(hist)
             elif hcalc==1: # entropy
-                total = float(np.sum(bins))
+                total = float(np.sum(hist))
                 if total > 0.0:
-                    for b in bins:
+                    for b in hist:
                         if b > 0:
                             p = b / total
                             e += p * math.log(p)
-                    e = e/math.log(bins.size)
+                    e = e/math.log(hist.size)
             elif hcalc==2: # zero cross
-                m=np.mean(bins)
-                s=np.sign(bins-m)
+                m=np.mean(hist)
+                s=np.sign(hist-m)
                 c=s[1:]*s[:-1]
-                e = np.sum(c>0)/bins.size
+                e = np.sum(c>0)/hist.size
             elif hcalc==3: # std of changes
-                for k in range(bins.size - 1):
-                    bins[k] = bins[k + 1] - bins[k]
-                e = np.std(bins[:-1])
+                for k in range(hist.size - 1):
+                    hist[k] = hist[k + 1] - hist[k]
+                e = np.std(hist[:-1])
             elif hcalc==4: # std of convexity
-                for k in range(bins.size - 2):
-                    bins[k] = bins[k + 2] - 2*bins[k+1] + bins[k]
-                e = np.std(bins[:-2])
+                for k in range(hist.size - 2):
+                    hist[k] = hist[k + 2] - 2*hist[k+1] + hist[k]
+                e = np.std(hist[:-2])
             elif hcalc==5:
-                a = bins-np.mean(bins)
+                a = hist-np.mean(hist)
                 m2 = np.mean(a*a)
                 m3 = np.mean(a*a*a)
                 if m2 > 0:
@@ -2914,8 +3020,8 @@ def _hist_field_1d(
                     e  = 0.0
             elif hcalc==6:
                 e = 0.0
-                for k in range(bins.size-1):
-                    e += abs(bins[k+1] - bins[k])
+                for k in range(hist.size-1):
+                    e += abs(hist[k+1] - hist[k])
             else:
                 e = 0.0
             
@@ -3563,15 +3669,22 @@ def make_cfg(spec:str):
         w1 = _get_float(specdict, "w1", math.pi)
         K = max(K,2)
         map_cfg["omegas"] = np.linspace(w0, w1, K, dtype=np.float64)
+        map_cfg["entropy_sign"] = int(-1)
+        if len(specdict["entropy"])>0:
+            map_cfg["entropy_sign"] = int(specdict["entropy"][0])
+
 
     if "hist" in specdict:
         map_cfg["type"] = map_cfg["type"] + "_hist"
         map_cfg["vcalc"] = int(0)
         map_cfg["hcalc"] = int(0)
+        map_cfg["hbins"] = map_cfg["n_it"]
         if len(specdict["hist"])>0:
             map_cfg["vcalc"] = int(specdict["hist"][0])
-        if len(specdict["hist"])>0:
+        if len(specdict["hist"])>1:
             map_cfg["hcalc"] = int(specdict["hist"][1])
+        if len(specdict["hist"])>2:
+            map_cfg["hbins"] = int(specdict["hist"][2])
 
     return map_cfg
 
@@ -3644,7 +3757,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
                 map_cfg["omegas"],
         )
         # map H∈[0,1] to [-1,1] so your diverging palettes still work:
-        field = -1 * (2.0 * raw - 1.0)
+        field = map_cfg["entropy_sign"] * (2.0 * raw - 1.0)
     
     elif map_cfg["type"] == "step2d_ab_entropy":
 
@@ -3661,7 +3774,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
             int(map_cfg["n_it"]),
             map_cfg["omegas"],
         )
-        field = 2.0 * raw - 1.0
+        field = map_cfg["entropy_sign"] * (2.0 * raw - 1.0)
     
     elif map_cfg["type"] == "step2d_entropy":
 
@@ -3677,7 +3790,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
             int(map_cfg["n_it"]),
             map_cfg["omegas"],
         )
-        field = 2.0 * raw - 1.0
+        field = map_cfg["entropy_sign"] * (2.0 * raw - 1.0)
     
     elif map_cfg["type"] == "step1d_hist":
 
@@ -3693,6 +3806,7 @@ def spec2lyapunov(spec: str, pix: int = 5000) -> np.ndarray:
             int(map_cfg["n_it"]),
             int(map_cfg["vcalc"]),
             int(map_cfg["hcalc"]),
+            int(map_cfg["hbins"]),
         )
 
         field = raw-np.median(raw)

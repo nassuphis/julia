@@ -1,0 +1,647 @@
+\documentclass{article}
+\usepackage[portrait, headheight = 0cm, margin=0.25cm, top = 0.25cm]{geometry} 
+\usepackage{graphicx}
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{pdfpages}
+\usepackage[export]{adjustbox} 
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{shadings,arrows.meta,positioning,calc,intersections}
+\usepackage{hyperref}
+\usepackage[most]{tcolorbox}
+\usepackage{array} % ensure m{} columns work
+\usepackage{enumitem}  % to control list spacing
+\usepackage{relsize}
+
+<<setup, include=FALSE>>=
+run_code <- FALSE   # or FALSE to disable execution
+@
+
+\title{
+\vskip 1cm
+{\bf\huge Equation 948}
+\vskip 3cm
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=15cm, height=15cm]{lyap948_38_hist.png}}
+\end{center}
+\vskip 1cm
+}
+\author{Wigerich}
+
+\begin{document}
+\setlength{\fboxsep}{0pt} % no padding
+\maketitle
+
+\newpage
+\tableofcontents
+
+\newpage
+\section{Equation 948}
+
+
+\vskip 1cm 
+\noindent Orbit Equation:
+\vskip 1cm 
+
+\begin{center}
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=black,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=2pt,right=2pt,
+    top=12pt,bottom=12pt   % <-- more vertical padding
+]
+\[\mathlarger{
+x_{n+1}
+= b \,\sin^{2}\!\Bigl(x_{n} + r^{\mu}\Bigr)
++ \alpha\, r^{k}\,
+  H\!\Bigl(\mu \tfrac{\pi}{2}
+  - \operatorname{Mod}\!\bigl(x_{n} + r^{n},\;\gamma\pi\bigr)\Bigr)
++ \beta\, r^{k}\,
+  \Bigl[1 - H\!\Bigl(\mu \tfrac{\pi}{2}
+  - \operatorname{Mod}\!\bigl(x_{n} + r^{n},\;\gamma\pi\bigr)\Bigr)\Bigr]
+}\]
+\end{tcolorbox}
+\end{center}
+\noindent where $H$ is the Heaviside function, also known as {\it step function}.
+
+\vskip 1cm 
+\noindent Orbit Equation Parameters:
+\vskip 1cm 
+
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{r}}$, parameter {\tt r}, forced
+    \item $\mathlarger{\mathlarger{b}}$, parameter {\tt b}, default 2.0
+    \item $\mathlarger{\mathlarger{\alpha}}$, parameter {\tt alpha}, default  0.0
+    \item $\mathlarger{\mathlarger{\beta}}$, parameter {\tt beta}, default  0.0
+    \item $\mathlarger{\mathlarger{\kappa}}$, parameter {\tt k}, default 2.0
+    \item $\mathlarger{\mathlarger{\mu}}$, parameter {\tt mu}, default 1.0
+    \item $\mathlarger{\mathlarger{\gamma}}$, parameter {\tt gamma}, default 1.0
+    \item $\mathlarger{\mathlarger{n}}$, parameter {\tt n}, default 1.0
+    \item domain: \verb|domain=[0.0, 0.0, 10.0, 10.0]|
+    \item initial value: \verb|x0=0.5|
+    \item transient steps: \verb|trans=200|
+    \item iterations: \verb|iter=200|
+\end{itemize}
+
+\vskip 1cm 
+\noindent Orbit Classification:
+\vskip 1cm 
+
+\begin{itemize}
+    \item Lyapunov
+    \item Spectral Density Entropy
+    \item Ad Hoc Orbit Histogram Functionals
+\end{itemize}
+
+\newpage
+\section{Default parameters, Lyapunov exponent}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_default.png}}
+Default parameters, Lyapunov exponent field
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'map:eq948,rgb:mh_eq:1:firebrick:black:sunset' \
+--pix 5000 --out eqn948_default.png
+@
+\begin{itemize}
+    \item default parameters, using lyapunov exponent
+\end{itemize}
+
+\newpage
+\section{Default parameters, Spectral Entropy }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_default_entropy.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'map:eq948,rgb:mh_eq:1:firebrick:black:sunset,entropy:1' \
+--pix 5000 --out eqn948_default_entropy.png --thumb 5000
+@
+\begin{itemize}
+    \item using the {\tt entropy} field generator 
+\end{itemize}
+
+\newpage
+\section{Default parameters, Orbit histogram functionals}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_default_hist.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'map:eq948,rgb:mh_eq:1:firebrick:black:sunset,hist:{0:3}:{0:3}' \
+--pix 2000 --out eqn948_default_hist.png --thumb 5000
+@
+\begin{itemize}
+    \item using the {\tt hist} field generator for different functions
+\end{itemize}
+
+\newpage
+\section{Location 1, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc1_hist_3_0.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AAAB:-4:-4:4:4,b:1.5,alpha:0,beta:0,k:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:3:0:128' \
+--pix 5000 --out eqn948_loc1_hist_3_0.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.5$,  $\mathlarger{\mathlarger{\alpha}}=0.0$,  $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$
+    \item sequence {\tt AAAB}
+    \item range {\tt -4:-4:4:4}
+    \item {\tt hist:3:0:128}
+\end{itemize}
+
+\newpage
+\section{Location 2, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc2_hist_3_0.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AAABB:-4:-4:4:4,b:1.5,alpha:0,beta:0,k:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:3:0:128' \
+--pix 5000 --out eqn948_loc2_hist_3_0.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.5$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$
+    \item sequence {\tt AAABB}
+    \item range {\tt -4:-4:4:4}
+     \item {\tt hist:3:0:128}
+\end{itemize}
+
+\newpage
+\section{Location 3, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc3_hist_3_0.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AAABBB:-4:-4:4:4,b:1.5,alpha:0,beta:0,k:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:3:0:128' \
+--pix 5000 --out eqn948_loc3_hist_3_0.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.5$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$
+    \item sequence {\tt AAABBB}
+    \item range {\tt -4:-4:4:4}
+    \item {\tt hist:3:0:128}
+\end{itemize}
+
+\newpage
+\section{Location 4, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc4_hist_3_0.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AAB:-4:-4:4:4,b:1.5,alpha:0,beta:0,k:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:4:4:128' \
+--pix 5000 --out eqn948_loc4_hist_3_0.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.5$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$
+    \item sequence {\tt AAB}
+    \item range {\tt -4:-4:4:4}
+    \item {\tt hist:4:4:128}
+\end{itemize}
+
+\newpage
+\section{Location 5, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc5_hist_3_0.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AAB:-4:-4:4:4,b:1.5,alpha:0,beta:0,k:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:6:6:128' \
+--pix 5000 --out eqn948_loc5_hist_3_0.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.5$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$
+    \item sequence {\tt AAB}
+    \item range {\tt -4:-4:4:4}
+    \item {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 6, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc6_hist_3_0.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AB:-4:-4:4:4,b:1.5,alpha:0,beta:0,k:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:6:6:128' \
+--pix 5000 --out eqn948_loc6_hist_3_0.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.5$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$
+    \item sequence {\tt AB}
+    \item range {\tt -4:-4:4:4}
+    \item {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 7, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc7_hist_3_0.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AB:-4:-4:4:4,b:1.5,alpha:0,beta:0,k:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:3:0:128' \
+--pix 5000 --out eqn948_loc7_hist_3_0.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.5$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$
+    \item sequence {\tt AB}
+    \item range {\tt -4:-4:4:4}
+    \item {\tt hist:3:0:128}
+\end{itemize}
+
+\newpage
+\section{Location 8, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc8_hist_3_0.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:A3B:-4:-4:4:4,b:-1,alpha:0,beta:0,k:4,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:3:3:128' \
+--pix 2000 --out eqn948_loc8_hist_3_0.png --thumb 2000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=-1$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=4$
+    \item sequence {\tt A3B}
+    \item range {\tt -4:-4:4:4}
+    \item {\tt hist:3:3:128}
+\end{itemize}
+
+\newpage
+\section{Location 9, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc9_hist_6_6.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:A3B:0.001:0.0001:8:8,b:1,alpha:0,beta:0,k:0,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:6:6:128' \
+--pix 5000 --out eqn948_loc9_hist_6_6.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.0$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=0.0$
+    \item sequence {\tt A3B}
+    \item range {\tt 0:0:8:8}
+    \item {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 10, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc10_hist_6_6.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:A3B:0.001:0.0001:8:8,b:3,mu:0.75,alpha:0,beta:0,k:0,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:6:6:128' \
+--pix 5000 --out eqn948_loc10_hist_6_6.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=3.0$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{\mu}}=0.75$, $\mathlarger{\mathlarger{k}}=0.0$
+    \item sequence {\tt A3B}
+    \item range {\tt 0:0:8:8}
+    \item {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 11, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc11_hist_6_6.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:A3B:0.001:0.0001:8:8,b:1,mu:2,alpha:-2,beta:-2,k:.5,n:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:6:6:128' \
+--pix 5000 --out eqn948_loc11_hist_6_6.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.0$, $\mathlarger{\mathlarger{\alpha}}=-2.0$, $\mathlarger{\mathlarger{\beta}}=-2.0$
+    \item $\mathlarger{\mathlarger{k}}=5.0$, $\mathlarger{\mathlarger{n}}=2.0$, $\mathlarger{\mathlarger{\mu}}=2.0$
+    \item sequence {\tt A3B}, range {\tt 0:0:8:8}, {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 12, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc12_hist_6_6.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:A3B:0.001:0.0001:8:8,b:1,mu:1.5,alpha:-3,beta:-3,k:.5,n:2,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:0:0' \
+--pix 5000 --out eqn948_loc12_hist_6_6.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.0$, $\mathlarger{\mathlarger{\alpha}}=-3.0$, $\mathlarger{\mathlarger{\beta}}=-3.0$
+    \item $\mathlarger{\mathlarger{k}}=0.5$, $\mathlarger{\mathlarger{n}}=2.0$, $\mathlarger{\mathlarger{\mu}}=1.5$
+    \item sequence {\tt A3B}, range {\tt 0:0:8:8}, {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 13, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc13_hist_6_6.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:A3B:0.001:0.0001:8:8,b:1,mu:1.25,alpha:0.5,beta:0.5,k:3,n:1,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:0:0' \
+--pix 5000 --out eqn948_loc13_hist_6_6.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1.0$, $\mathlarger{\mathlarger{\alpha}}=0.5$, $\mathlarger{\mathlarger{\beta}}=0.5$
+    \item $\mathlarger{\mathlarger{k}}=3$, $\mathlarger{\mathlarger{n}}=1$, $\mathlarger{\mathlarger{\mu}}=1.25$
+    \item sequence {\tt A3B}, range {\tt 0:0:8:8}, {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 14, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc14_hist_6_6.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:A3B:0.001:0.0001:8:8,b:1,mu:1.25,alpha:0.5,beta:0.5,k:3,n:1,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:5:0' \
+--pix 10000 --out eqn948_loc14_hist_6_6.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1$, $\mathlarger{\mathlarger{\alpha}}=0.5$, $\mathlarger{\mathlarger{\beta}}=0.5$
+    \item $\mathlarger{\mathlarger{k}}=3$, $\mathlarger{\mathlarger{n}}=1$, $\mathlarger{\mathlarger{\mu}}=1.25$
+    \item sequence {\tt A3B}, range {\tt 0:0:8:8}, {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 15, Orbit histogram}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc15_hist_6_6.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:A20B20:0.001:0.0001:12:12,b:1,mu:1,alpha:0.5,beta:0.5,k:1,n:1,trans:200,iter:1000,rgb:mh_eq:1:firebrick:black:sunset,hist:5:0' \
+--pix 10000 --out eqn948_loc15_hist_6_6.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1$, $\mathlarger{\mathlarger{\alpha}}=0.5$, $\mathlarger{\mathlarger{\beta}}=0.5$
+    \item $\mathlarger{\mathlarger{k}}=3$, $\mathlarger{\mathlarger{n}}=1$, $\mathlarger{\mathlarger{\mu}}=1.25$
+    \item sequence {\tt A3B}, range {\tt 0:0:8:8}, {\tt hist:6:6:128}
+\end{itemize}
+
+\newpage
+\section{Location 16, Orbit histogram 3,3}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc16_hist_3_3.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AB:1:1:9:9,b:1,alpha:0.0,beta:0.0,k:2,x0:0.4,trans:200,iter:200,rgb:mh_eq:1:firebrick:black:sunset,hist:3:3:128' \
+--pix 5000 --out eqn948_loc16_hist_3_3.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$, $\mathlarger{\mathlarger{n}}=1$, $\mathlarger{\mathlarger{\mu}}=1$
+    \item sequence {\tt AB}, range {\tt 1:1:9:9}, {\tt hist:3:3:128}
+\end{itemize}
+
+\newpage
+\section{Location 16, Orbit histogram mosaic}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc16_hist_mosaic.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+python lyapunov1.py --spec \
+'map:eq948:AB:1:1:9:9,b:1,alpha:0.0,beta:0.0,k:2,x0:0.4,trans:200,iter:200,rgb:mh_eq:1:firebrick:black:sunset,hist:{0:3}:{0:3}:128' \
+--pix 5000 --out eqn948_loc16_hist_mosaic.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$, $\mathlarger{\mathlarger{n}}=1$, $\mathlarger{\mathlarger{\mu}}=1$
+    \item sequence {\tt AB}, range {\tt 1:1:9:9}, \verb|hist:{0:3}:{0:3}:128|
+\end{itemize}
+
+\newpage
+\section{Location 16, Orbit histogram mosaic1}
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{eqn948_loc16_hist_mosaic1.png}}
+Default parameters, Orbit histogram functions
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code,size='small'>>=
+lyapunov1.py --spec \
+'map:eq948:AB:1:1:9:9,b:1,alpha:0.0,beta:0.0,k:2,x0:0.4,trans:200,iter:200,rgb:mh_eq:1:firebrick:black:sunset,hist:{4:6}:{4:6}:128' \
+--pix 5000 --out eqn948_loc16_hist_mosaic1.png --thumb 5000
+@
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{b}}=1$, $\mathlarger{\mathlarger{\alpha}}=0.0$, $\mathlarger{\mathlarger{\beta}}=0.0$
+    \item $\mathlarger{\mathlarger{k}}=2$, $\mathlarger{\mathlarger{n}}=1$, $\mathlarger{\mathlarger{\mu}}=1$
+    \item sequence {\tt AB}, range {\tt 1:1:9:9}, \verb|hist:{0:3}:{0:3}:128|
+\end{itemize}
+
+\end{document}
