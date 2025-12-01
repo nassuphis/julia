@@ -1318,6 +1318,30 @@ MAP_TEMPLATES: dict[str, dict] = {
         iter=200,
     ),
 
+     "eq948a": dict(
+        expr=(
+            "b * mod1(x + pow(r,mu) )"
+            " + alpha * pow(r, k) * step(mu*pi/2 - Mod(x + pow(r,n), gamma*pi))"
+            " + beta  * pow(r, k) * (1 - step(mu*pi/2 - Mod(x + pow(r,n), gamma*pi)))"
+        ),
+        deriv_expr = "2*b*sin(x + pow(r,mu))*cos(x + pow(r,mu))",
+        domain=[0.0, 0.0, 10.0, 10.0],
+        pardict=dict(
+            r  = "forced",
+            b  = 2.0,
+            mu = 1.0,
+            alpha  = 0.0,
+            beta  = 0.0, 
+            k  = 2.0,
+            n = 1,            
+            gamma=1.0,
+        ),  
+        x0=0.5,
+        trans=200,
+        iter=200,
+    ),
+
+
     "eq948_2d": dict(
         type="step2d",
         expr_x=(
@@ -2784,17 +2808,12 @@ def _entropy_field_2d(
 # ---------------------------------------------------------------------------
 # stat field 
 # ---------------------------------------------------------------------------
+
 @njit
 def hist_fixed_bins_inplace(bins, x, xmin, xmax):
     nbins = bins.size
-    # clear bins
-    for k in range(nbins):
-        bins[k] = 0
-
-    # guard against zero width
-    if xmax <= xmin:
-        xmax = xmin + 1e-12
-
+    for k in range(nbins): bins[k] = 0
+    if xmax <= xmin: xmax = xmin + 1e-12
     scale = nbins / (xmax - xmin)
     for val in x:
         j = int((val - xmin) * scale)
@@ -2802,148 +2821,203 @@ def hist_fixed_bins_inplace(bins, x, xmin, xmax):
             bins[j] += 1
 
 
-
 @njit
 def compute_orbit(step, x0, A, B, seq, n_transient, n_iter, xs):
-    """
-    step:   njit'ed map f(x, r)
-    seq:    int8/int32 array with forcing sequence
-    xs:     preallocated float64[n_iter]
-    """
     seq_len = seq.size
     x = x0
-
-    # transient / burn-in
     for n in range(n_transient):
         force = seq[n % seq_len] & 1
         forced_param = A if force == 0 else B
         x = step(x, forced_param)
-        if not math.isfinite(x):
-            x = 0.5
-
-    # main orbit, store all x's
+        if not math.isfinite(x): x = 0.5
     for n in range(n_iter):
         force = seq[n % seq_len] & 1
         forced_param = A if force == 0 else B
         x = step(x, forced_param)
-        if not math.isfinite(x):
-            x = 0.5
+        if not math.isfinite(x): x = 0.5
         xs[n] = x
+    return
+
+@njit
+def copy(xs, vs):
+    for n in range(xs.size): vs[n] = xs[n]
+    return 
+    
+@njit
+def negabs(xs, vs):
+    for n in range(xs.size): vs[n] = -math.fabs(xs[n])
+    return 
+    
+@njit
+def modulo1(xs, vs):
+    for n in range(xs.size): vs[n] = xs[n] % 1
+    return 
+
+@njit
+def slope(xs, vs):
+    px = xs[0]
+    for n in range(1, xs.size):
+        x = xs[n]
+        vs[n] = x - px
+        px = x
+    vs[0] = vs[1] # preserve range
+    return
+
+@njit
+def convexity(xs, vs):
+    N = xs.size
+    if N < 3:
+        for n in range(N): vs[n] = 0.0
+        return
+    ppx = xs[0]
+    px  = xs[1]
+    for n in range(2, N):
+        x = xs[n]
+        vs[n] = x - 2.0 * px + ppx
+        ppx = px
+        px = x
+    vs[0] = vs[2] # preserve range
+    vs[1] = vs[2]
+    return 
+
+@njit
+def curvature(xs, vs):
+    N = xs.size
+    if N < 3:
+        for n in range(N): vs[n] = 0.0
+        return
+    ppx = xs[0]
+    px  = xs[1]
+    for n in range(2, N):
+        x = xs[n]
+        num = math.fabs(x - 2.0 * px + ppx)
+        denom = math.pow(1.0 + (x - px)**2, 3/2)
+        if denom > 0.0: v = num / denom
+        else: v = 0.0
+        vs[n] = v
+        ppx = px
+        px = x
+    vs[0] = vs[2] # preserve range
+    vs[1] = vs[2]
+    return
+
+@njit 
+def product(xs, vs):
+    px = xs[0]
+    for n in range(1, xs.size):
+        x = xs[n]
+        vs[n] = x * px
+        px = x
+    vs[0]=vs[1] # preserve range
+    return 
+
+@njit 
+def ema(xs, vs):
+    v = xs[0]
+    for n in range(1, xs.size):
+        x = xs[n]
+        v = v * 0.95 + x * 0.05
+        vs[n] = v
+    vs[0]=vs[1] # preserve range
+    return
+
+@njit 
+def rsi(xs, vs):
+    px = xs[0]
+    u = 0.0
+    w = 0.0
+    v = 0.0
+    for n in range(1, xs.size):
+        x = xs[n]
+        dx = x - px
+        u = 0.9 * u + 0.1 * dx
+        w = 0.9 * w + 0.1 * abs(dx)
+        if w > 0.0: v = u / w
+        vs[n] = v
+        px = x
+    vs[0]=vs[1] # preserve range
+    return
 
 @njit
 def transform_values(vcalc, xs, vs):
-    """
-    xs: input orbit values, length N
-    vs: output buffer, length N (in-place target)
-    """
     N = xs.size
-
-    if N == 0:
-        return
-
-    if vcalc == 0:
-        # value
-        for n in range(N):
-            vs[n] = xs[n]
-
-    elif vcalc == 1:
-        # slope: x - px
-        px = xs[0]
-        for n in range(1, N):
-            x = xs[n]
-            vs[n] = x - px
-            px = x
-        vs[0] = vs[1] # preserve range
-
-    elif vcalc == 2:
-        # convexity: x - 2px + ppx
-        if N < 3:
-            for n in range(N):
-                vs[n] = 0.0
-            return
-        ppx = xs[0]
-        px  = xs[1]
-        for n in range(2, N):
-            x = xs[n]
-            vs[n] = x - 2.0 * px + ppx
-            ppx = px
-            px = x
-        vs[0] = vs[2] # preserve range
-        vs[1] = vs[2]
-
-    elif vcalc == 3:
-        # curvature
-        if N < 3:
-            for n in range(N):
-                vs[n] = 0.0
-            return
-        ppx = xs[0]
-        px  = xs[1]
-        for n in range(2, N):
-            x = xs[n]
-            num = math.fabs(x - 2.0 * px + ppx)
-            denom = math.pow(1.0 + (x - px)**2, 3/2)
-            if denom > 0.0:
-                v = num / denom
-            else:
-                v = 0.0
-            vs[n] = v
-            ppx = px
-            px = x
-        vs[0] = vs[2] # preserve range
-        vs[1] = vs[2]
-
-    elif vcalc == 4:
-        # product: x * px
-        px = xs[0]
-        for n in range(1, N):
-            x = xs[n]
-            vs[n] = x * px
-            px = x
-        vs[0]=vs[1] # preserve range
-
-    elif vcalc == 5:
-        # EW mean over x: v_n = 0.95 v_{n-1} + 0.05 x_n
-        v = xs[0]
-        for n in range(1, N):
-            x = xs[n]
-            v = v * 0.95 + x * 0.05
-            vs[n] = v
-        vs[0]=vs[1] # preserve range
-
-    elif vcalc == 6:
-        # EW ratio: v = u / w with EW updates on u,w
-        px = xs[0]
-        u = 0.0
-        w = 0.0
-        v = 0.0
-        for n in range(1, N):
-            x = xs[n]
-            dx = x - px
-            u = 0.9 * u + 0.1 * dx
-            w = 0.9 * w + 0.1 * abs(dx)
-            if w > 0.0:
-                v = u / w
-            # else keep old v
-            vs[n] = v
-            px = x
-        vs[0]=vs[1] # preserve range
-
-    elif vcalc == 7:
-        for n in range(N):
-            vs[n] = -abs(xs[n])
-
-    elif vcalc == 8:
-        for n in range(N):
-            #frac, integer = math.modf(xs[n])
-            vs[n] = xs[n]%1
-
-    else:
-        # default: just x
-        for n in range(N):
-            vs[n] = xs[n]
+    if N == 0: return
+    if vcalc == 0: copy(xs,vs)
+    elif vcalc == 1: slope(xs,vs)
+    elif vcalc == 2: convexity(xs,vs)
+    elif vcalc == 3: curvature(xs,vs)
+    elif vcalc == 4: product(xs,vs)
+    elif vcalc == 5: ema(xs,vs)
+    elif vcalc == 6: rsi(xs,vs)
+    elif vcalc == 7: negabs(xs,vs)
+    elif vcalc == 8: modulo1(xs,vs)
+    else: copy(xs,vs)
     return
 
+@njit
+def entropy(hist):
+    total = float(np.sum(hist))
+    e=0.0
+    if total > 0.0:
+        for b in hist:
+            if b > 0:
+                p = b / total
+                e += p * math.log(p)
+        e = e/math.log(hist.size)
+    return e
+
+@njit
+def zerocross(hist):
+    m=np.mean(hist)
+    s=np.sign(hist-m)
+    c=s[1:]*s[:-1]
+    e = np.sum(c>0)/hist.size
+    return e
+    
+@njit 
+def slopehist(hist):
+    for k in range(hist.size - 1):
+        hist[k] = hist[k + 1] - hist[k]
+    e = np.std(hist[:-1])
+    return e
+
+@njit
+def convhist(hist):
+    for k in range(hist.size - 2):
+        hist[k] = hist[k + 2] - 2*hist[k+1] + hist[k]
+    e = np.std(hist[:-2])
+    return e
+
+@njit
+def skewhist(hist):
+    a = hist-np.mean(hist)
+    m2 = np.mean(a*a)
+    m3 = np.mean(a*a*a)
+    if m2 > 0:
+        e  = m3 / (m2 ** 1.5)
+    else:
+        e  = 0.0
+    return e
+
+
+@njit
+def sumabschange(hist):
+    e = 0.0
+    for k in range(hist.size-1): 
+        e += abs(hist[k+1] - hist[k])
+    return e
+
+
+@njit
+def transform_hist(hcalc,hist):
+    if   hcalc==0: return np.std(hist)
+    elif hcalc==1: return entropy(hist)
+    elif hcalc==2: return zerocross(hist)
+    elif hcalc==3: return slopehist(hist)
+    elif hcalc==4: return convhist(hist)
+    elif hcalc==5: return skewhist(hist)
+    elif hcalc==6: return sumabschange(hist)
+    return 0.0
 
 
 
@@ -2972,59 +3046,15 @@ def _hist_field_1d(
             A, B = map_logical_to_physical(domain, i / denom, j / denom)
             compute_orbit(step, x0, A, B, seq, n_transient, n_iter, xs)
             transform_values(vcalc, xs, vs)
-            # get vmin/vmax for this orbit:
             vmin = 1e300
             vmax = -1e300
             for n in range(n_iter):
                 v = vs[n]
-                if v < vmin:
-                    vmin = v
-                if v > vmax:
-                    vmax = v
-            # histogram + stat:
-            for k in range(hist.size):
-                hist[k] = 0  # reset
+                if v < vmin: vmin = v
+                if v > vmax: vmax = v
+            for k in range(hist.size): hist[k] = 0  # reset
             hist_fixed_bins_inplace(hist, vs, vmin, vmax)
-
-            e=0.0
-            if hcalc==0: # stdev
-                e = np.std(hist)
-            elif hcalc==1: # entropy
-                total = float(np.sum(hist))
-                if total > 0.0:
-                    for b in hist:
-                        if b > 0:
-                            p = b / total
-                            e += p * math.log(p)
-                    e = e/math.log(hist.size)
-            elif hcalc==2: # zero cross
-                m=np.mean(hist)
-                s=np.sign(hist-m)
-                c=s[1:]*s[:-1]
-                e = np.sum(c>0)/hist.size
-            elif hcalc==3: # std of changes
-                for k in range(hist.size - 1):
-                    hist[k] = hist[k + 1] - hist[k]
-                e = np.std(hist[:-1])
-            elif hcalc==4: # std of convexity
-                for k in range(hist.size - 2):
-                    hist[k] = hist[k + 2] - 2*hist[k+1] + hist[k]
-                e = np.std(hist[:-2])
-            elif hcalc==5:
-                a = hist-np.mean(hist)
-                m2 = np.mean(a*a)
-                m3 = np.mean(a*a*a)
-                if m2 > 0:
-                    e  = m3 / (m2 ** 1.5)
-                else:
-                    e  = 0.0
-            elif hcalc==6:
-                e = 0.0
-                for k in range(hist.size-1):
-                    e += abs(hist[k+1] - hist[k])
-            else:
-                e = 0.0
-            
+            e=transform_hist(hcalc,hist)
             out[j, i] = -e
 
     return out
@@ -3253,8 +3283,10 @@ def _hist_field_2d(
             out[j, i] = -e
 
     return out
+
+
 # ---------------------------------------------------------------------------
-# Color mapping: Lyapunov exponent or Entropy -> RGB (schemes)
+# Color mapping: Lyapunov exponent or Entropy or Custom -> RGB (schemes)
 # ---------------------------------------------------------------------------
 
 # Scheme registry: ADD NEW SCHEMES HERE ONLY
