@@ -29,6 +29,7 @@ import sys
 sys.path.insert(0, "/Users/nicknassuphis")
 import time
 import math
+import cmath
 import argparse
 import re as regex
 import numpy as np
@@ -245,6 +246,551 @@ def ceil(x):
 def abs_cap(x,cap):
     return min(abs(x),cap)*sign(x)
 
+@njit
+def j0s(x):
+    ax = abs(x)
+    if ax < 8.0:
+        y = x*x
+        return (1.0 - y*(0.25 - y*(0.046875 - y*(0.003255208333))))
+    else:
+        z = 8.0/ax
+        y = z*z
+        xx = ax - 0.7853981633974483096
+        return np.sqrt(0.636619772/ax) * (
+            np.cos(xx)*(1 - y*(0.001098628627 - y*0.000002073)) -
+            np.sin(xx)*(0.01562499997 - y*(0.000143048876 - y*0.000000243))
+        )
+    
+@njit("float64(float64)", fastmath=True, cache=True)
+def j0(x):
+    ax = x if x >= 0.0 else -x
+
+    # Near zero: J0(x) ≈ 1 - x²/4
+    if ax < 1e-8:
+        return 1.0 - 0.25 * x * x
+
+    # Power series: J0(x) = Σ (-1)^k (x²/4)^k / (k!)²
+    if ax < 20.0:
+        y = (x * x) * 0.25
+        term = 1.0
+        s = 1.0
+        # 20 terms is plenty for double precision on this range
+        for k in range(1, 20):
+            term *= -y / (k * k)
+            s += term
+        return s
+
+    # Asymptotic for large |x|: J0(x) ~ sqrt(2/(πx)) cos(x - π/4)
+    t = ax
+    return math.sqrt(2.0 / (math.pi * t)) * math.cos(t - 0.25 * math.pi)
+
+
+@njit("float64(float64)", fastmath=True, cache=True)
+def j1(x):
+    ax = x if x >= 0.0 else -x
+
+    # Near zero: J1(x) ≈ x/2
+    if ax < 1e-8:
+        return 0.5 * x
+
+    # Power series: J1(x) = Σ (-1)^k (x/2)^{2k+1} / (k!(k+1)!)
+    if ax < 20.0:
+        # k = 0 term
+        term = 0.5 * x
+        s = term
+        y = (x * x) * 0.25
+        for k in range(1, 20):
+            term *= -y / (k * (k + 1))
+            s += term
+        return s
+
+    # Asymptotic: J1(x) ~ sqrt(2/(πx)) cos(x - 3π/4)
+    t = ax
+    val = math.sqrt(2.0 / (math.pi * t)) * math.cos(t - 0.75 * math.pi)
+    # J1(-x) = -J1(x)
+    return -val if x < 0.0 else val
+
+
+@njit("float64(float64)", fastmath=True, cache=True)
+def i0(x):
+    ax = x if x >= 0.0 else -x
+
+    # Near zero: I0(x) ≈ 1 + x²/4
+    if ax < 1e-8:
+        return 1.0 + 0.25 * x * x
+
+    # Power series: I0(x) = Σ (x²/4)^k / (k!)²
+    if ax < 15.0:
+        y = 0.25 * x * x
+        term = 1.0
+        s = 1.0
+        for k in range(1, 50):
+            term *= y / (k * k)
+            s += term
+        return s
+
+    # Asymptotic: I0(x) ~ exp(x)/sqrt(2πx)
+    t = ax
+    val = math.exp(t) / math.sqrt(2.0 * math.pi * t)
+    return val
+
+
+@njit("float64(float64)", fastmath=True, cache=True)
+def i1(x):
+    ax = x if x >= 0.0 else -x
+
+    # Near zero: I1(x) ≈ x/2
+    if ax < 1e-8:
+        return 0.5 * x
+
+    # Power series: I1(x) = Σ (x/2)^{2k+1} / (k!(k+1)!)
+    if ax < 15.0:
+        y = 0.25 * x * x
+        term = 0.5 * x  # k=0
+        s = term
+        for k in range(1, 50):
+            term *= y / (k * (k + 1))
+            s += term
+        return s
+
+    # Asymptotic: I1(x) ~ exp(x)/sqrt(2πx)
+    t = ax
+    val = math.exp(t) / math.sqrt(2.0 * math.pi * t)
+    # I1(-x) = -I1(x)
+    return -val if x < 0.0 else val
+
+# Ai(0), Ai'(0), Bi(0), Bi'(0)
+AI0  = 0.3550280538878172
+AI0P = -0.2588194037928068
+BI0  = 0.6149266274460007
+BI0P = 0.4482883573538264
+
+
+@njit(types.float64(types.float64, types.float64, types.float64), fastmath=True, cache=True)
+def _airy_series(x, c0, c1):
+    """
+    Generic power series for a solution of y'' - x y = 0
+    with y(0) = c0, y'(0) = c1.
+
+    Uses the recurrence from the ODE:
+        c_{n+3} = c_n / ((n+3)(n+2))
+    split into two nonzero branches n ≡ 0,1 (mod 3).
+    """
+    x3 = x * x * x
+    y = 0.0
+    kmax = 50
+    tol = 1e-16
+
+    # branch n0 = 0: n = 0, 3, 6, ...
+    n = 0.0
+    term = c0
+    y += term
+    for _ in range(kmax):
+        denom = (n + 3.0) * (n + 2.0)
+        term *= x3 / denom
+        y += term
+        n += 3.0
+        if math.fabs(term) < tol:
+            break
+
+    # branch n0 = 1: n = 1, 4, 7, ...
+    n = 1.0
+    term = c1 * x
+    y += term
+    for _ in range(kmax):
+        denom = (n + 3.0) * (n + 2.0)
+        term *= x3 / denom
+        y += term
+        n += 3.0
+        if math.fabs(term) < tol:
+            break
+
+    return y
+
+
+@njit(types.float64(types.float64), fastmath=True, cache=True)
+def airy_ai(x):
+    """
+    Numba-friendly Airy Ai(x).
+
+    - |x| <= 5: power series around 0
+    - x  >  5: decaying asymptotic
+    - x  < -5: oscillatory asymptotic
+    """
+    if x > 5.0:
+        # Ai(x) ~ (1 / (2√π)) x^{-1/4} exp(-2/3 x^{3/2})
+        t = (2.0 / 3.0) * (x ** 1.5)
+        amp = 1.0 / (2.0 * math.sqrt(math.pi) * (x ** 0.25))
+        return amp * math.exp(-t)
+    elif x < -5.0:
+        # Ai(x) ~ (1 / (√π |x|^{1/4})) * sin(2/3 |x|^{3/2} + π/4)
+        z = -x
+        t = (2.0 / 3.0) * (z ** 1.5)
+        amp = 1.0 / (math.sqrt(math.pi) * (z ** 0.25))
+        return amp * math.sin(t + 0.25 * math.pi)
+    else:
+        return _airy_series(x, AI0, AI0P)
+
+
+@njit(types.float64(types.float64), fastmath=True, cache=True)
+def airy_bi(x):
+    """
+    Numba-friendly Airy Bi(x).
+
+    - |x| <= 5: power series around 0
+    - x  >  5: growing asymptotic
+    - x  < -5: oscillatory asymptotic
+    """
+    if x > 5.0:
+        # Bi(x) ~ (1 / √π) x^{-1/4} exp(+2/3 x^{3/2})
+        t = (2.0 / 3.0) * (x ** 1.5)
+        amp = 1.0 / (math.sqrt(math.pi) * (x ** 0.25))
+        return amp * math.exp(t)
+    elif x < -5.0:
+        # Bi(x) ~ (1 / (√π |x|^{1/4})) * cos(2/3 |x|^{3/2} + π/4)
+        z = -x
+        t = (2.0 / 3.0) * (z ** 1.5)
+        amp = 1.0 / (math.sqrt(math.pi) * (z ** 0.25))
+        return amp * math.cos(t + 0.25 * math.pi)
+    else:
+        return _airy_series(x, BI0, BI0P)
+    
+PI = math.pi
+PI_OVER_2 = 0.5 * PI
+
+
+@njit(types.float64(types.float64), fastmath=True, cache=True)
+def fresnel_c(x):
+    """
+    Numba-friendly Fresnel C(x) = ∫_0^x cos(π t^2 / 2) dt
+
+    - |x| <= 2: power series around 0
+    - |x|  > 2: simple asymptotic (good qualitatively)
+    """
+    # C(x) is odd: C(-x) = -C(x)
+    sign = 1.0
+    if x < 0.0:
+        sign = -1.0
+        x = -x
+
+    if x <= 2.0:
+        # Power series:
+        # C(x) = Σ_{k=0}^∞ (-1)^k ( (π/2)^{2k} x^{4k+1} ) / ( (2k)! (4k+1) )
+        max_k = 10
+        result = 0.0
+
+        # Precompute some powers iteratively
+        x2 = x * x
+        x4 = x2 * x2
+        p = 1.0                    # (π/2)^(2k)
+        xpow = x                   # x^(4k+1), start at k=0 -> x^1
+        sign_k = 1.0               # (-1)^k
+        fact2k = 1.0               # (2k)! (start with 0! = 1)
+
+        for k in range(max_k):
+            term = sign_k * p * xpow / (fact2k * (4.0 * k + 1.0))
+            result += term
+
+            # Prepare next k
+            # sign
+            sign_k = -sign_k
+
+            # (π/2)^{2(k+1)} = (π/2)^{2k} * (π/2)^2
+            p *= (PI_OVER_2 * PI_OVER_2)
+
+            # x^{4(k+1)+1} = x^{4k+1} * x^4
+            xpow *= x4
+
+            # (2(k+1))! from (2k)!:
+            # multiply by (2k+1)*(2k+2)
+            n1 = 2 * k + 1
+            n2 = 2 * k + 2
+            fact2k *= n1 * n2
+
+        return sign * result
+
+    # Asymptotic region: x > 2
+    # Use a simple two-term asymptotic:
+    # C(x) ≈ 1/2 + f(x)*sin(π x^2/2) - g(x)*cos(π x^2/2)
+    # with f(x) ≈ 1/(π x), g(x) ≈ 1/(π^2 x^3)
+    t = PI_OVER_2 * x * x
+    sin_t = math.sin(t)
+    cos_t = math.cos(t)
+    f = 1.0 / (PI * x)
+    g = 1.0 / (PI * PI * x * x * x)
+    result = 0.5 + f * sin_t - g * cos_t
+
+    return sign * result
+
+
+@njit(types.float64(types.float64), fastmath=True, cache=True)
+def fresnel_s(x):
+    """
+    Numba-friendly Fresnel S(x) = ∫_0^x sin(π t^2 / 2) dt
+
+    - |x| <= 2: power series around 0
+    - |x|  > 2: simple asymptotic (good qualitatively)
+    """
+    # S(x) is odd: S(-x) = -S(x)
+    sign = 1.0
+    if x < 0.0:
+        sign = -1.0
+        x = -x
+
+    if x <= 2.0:
+        # Power series:
+        # S(x) = Σ_{k=0}^∞ (-1)^k ( (π/2)^{2k+1} x^{4k+3} ) / ( (2k+1)! (4k+3) )
+        max_k = 10
+        result = 0.0
+
+        x2 = x * x
+        x4 = x2 * x2
+        p = PI_OVER_2              # (π/2)^(2k+1); start k=0 -> (π/2)^1
+        xpow = x * x2              # x^(4k+3), start at k=0 -> x^3
+        sign_k = 1.0               # (-1)^k
+        fact2k1 = 1.0              # (2k+1)!; start at k=0 -> 1! = 1
+
+        for k in range(max_k):
+            term = sign_k * p * xpow / (fact2k1 * (4.0 * k + 3.0))
+            result += term
+
+            # Prepare next k
+            sign_k = -sign_k
+            p *= (PI_OVER_2 * PI_OVER_2)
+            xpow *= x4
+
+            # (2(k+1)+1)! from (2k+1)!:
+            # multiply by (2k+2)*(2k+3)
+            n1 = 2 * k + 2
+            n2 = 2 * k + 3
+            fact2k1 *= n1 * n2
+
+        return sign * result
+
+    # Asymptotic region: x > 2
+    # S(x) ≈ 1/2 - f(x)*cos(π x^2/2) - g(x)*sin(π x^2/2)
+    t = PI_OVER_2 * x * x
+    sin_t = math.sin(t)
+    cos_t = math.cos(t)
+    f = 1.0 / (PI * x)
+    g = 1.0 / (PI * PI * x * x * x)
+    result = 0.5 - f * cos_t - g * sin_t
+
+    return sign * result
+
+# Tolerance & max iterations for the alternating series
+ZETA_TOL = 1e-15
+ZETA_MAX_N = 200
+
+
+@njit(types.float64(types.float64), fastmath=True, cache=True)
+def zeta(s):
+    """
+    Numba-safe Riemann zeta ζ(s) for real s with s > 0, s ≠ 1.
+
+    Uses the alternating Dirichlet eta series:
+        η(s) = Σ_{n>=1} (-1)^{n-1} / n^s
+        ζ(s) = η(s) / (1 - 2^{1-s})
+    """
+    # outside domain: just return NaN
+    if s <= 0.0:
+        return math.nan
+
+    # zeta has a pole at s=1
+    if abs(s - 1.0) < 1e-10:
+        # large placeholder instead of +∞
+        return 1e30
+
+    # compute eta(s)
+    eta = 0.0
+    sign = 1.0
+    for n in range(1, ZETA_MAX_N + 1):
+        term = sign / (n ** s)
+        eta += term
+        if math.fabs(term) < ZETA_TOL:
+            break
+        sign = -sign
+
+    # denominator 1 - 2^{1-s}
+    denom = 1.0 - (2.0 ** (1.0 - s))
+    return eta / denom
+
+
+@njit(types.float64(types.float64), fastmath=True, cache=True)
+def lambertw(x):
+    """
+    Real principal branch of Lambert W, W0(x), for x >= -1/e.
+
+    Uses Halley's method with a simple initial guess.
+    Suitable for maps, not for hardcore special-function work.
+    """
+    # domain check: real W0 exists for x >= -1/e
+    x_min = -1.0 / math.e
+    if x < x_min:
+        return math.nan
+
+    if x == 0.0:
+        return 0.0
+
+    # initial guess
+    if x < 1.0:
+        w = x        # near zero, W(x) ~ x
+    else:
+        w = math.log(x) - math.log(math.log(x + 1.0))
+
+    for _ in range(40):
+        e = math.exp(w)
+        we = w * e
+        f = we - x            # f(w) = w*e^w - x
+
+        if math.fabs(f) < 1e-14:
+            break
+
+        # avoid division near w = -1
+        wp1 = w + 1.0
+        if math.fabs(wp1) < 1e-7:
+            wp1 = 1e-7 if wp1 >= 0.0 else -1e-7
+
+        # Halley step
+        denom = e * wp1 - (wp1 + 1.0) * f / (2.0 * wp1)
+        w = w - f / denom
+
+    return w
+
+@njit(types.float64(types.float64, types.float64), fastmath=True, cache=True)
+def gammainc(a, x):
+    """
+    Regularized lower incomplete gamma P(a, x) for a > 0, x >= 0.
+
+        P(a,x) = γ(a,x) / Γ(a)
+
+    Uses:
+    - series for x < a + 1
+    - continued fraction for x >= a + 1
+    """
+    if a <= 0.0 or x < 0.0:
+        return math.nan
+
+    if x == 0.0:
+        return 0.0
+
+    # ln Γ(a)
+    gln = math.lgamma(a)
+
+    # Series representation
+    if x < a + 1.0:
+        ap = a
+        summ = 1.0 / a
+        delta = summ
+        for _ in range(1000):
+            ap += 1.0
+            delta *= x / ap
+            summ += delta
+            if math.fabs(delta) < math.fabs(summ) * 1e-15:
+                break
+        return summ * math.exp(-x + a * math.log(x) - gln)
+
+    # Continued fraction for Q(a,x) = Γ(a,x)/Γ(a); then P = 1 - Q
+    b = x + 1.0 - a
+    c = 1.0 / 1e-30
+    d = 1.0 / b
+    h = d
+    for i in range(1, 2000):
+        an = -i * (i - a)
+        b += 2.0
+        d = an * d + b
+        if math.fabs(d) < 1e-30:
+            d = 1e-30
+        c = b + an / c
+        if math.fabs(c) < 1e-30:
+            c = 1e-30
+        d = 1.0 / d
+        delta = d * c
+        h *= delta
+        if math.fabs(delta - 1.0) < 1e-15:
+            break
+
+    Q = math.exp(-x + a * math.log(x) - gln) * h
+    P = 1.0 - Q
+    return P
+
+SQRT_PI = math.sqrt(math.pi)
+
+@njit(types.float64(types.float64), fastmath=True, cache=True)
+def dawson(x):
+    """
+    Dawson's integral F(x):
+
+        F(x) = e^{-x^2} ∫_0^x e^{t^2} dt
+
+    Piecewise:
+    - |x| < 0.5: power series
+    - |x| >= 0.5: asymptotic expansion
+    """
+    ax = x if x >= 0.0 else -x
+
+    # Near zero: F(x) = x - 2/3 x^3 + 4/15 x^5 - 8/105 x^7 + ...
+    if ax < 0.5:
+        x2 = x * x
+        x4 = x2 * x2
+        x6 = x4 * x2
+        x8 = x4 * x4
+        return (x
+                - (2.0 / 3.0) * x * x2
+                + (4.0 / 15.0) * x * x4
+                - (8.0 / 105.0) * x * x6
+                + (16.0 / 945.0) * x * x8)
+
+    # Asymptotic: F(x) ~ 1/(2x) + 1/(4x^3) + 3/(8x^5) + 15/(16x^7) + ...
+    ax2 = ax * ax
+    ax3 = ax * ax2
+    ax5 = ax3 * ax2
+    ax7 = ax5 * ax2
+
+    f = (1.0 / (2.0 * ax)
+         + 1.0 / (4.0 * ax3)
+         + 3.0 / (8.0 * ax5)
+         + 15.0 / (16.0 * ax7))
+
+    return f if x >= 0.0 else -f
+
+@njit(types.float64(types.float64), fastmath=True, cache=True)
+def erfi(x):
+    """
+    Imaginary error function erfi(x), via Dawson:
+
+        erfi(x) = 2 / sqrt(pi) * e^{x^2} * F(x)
+    """
+    return (2.0 / SQRT_PI) * math.exp(x * x) * dawson(x)
+
+@njit(types.float64(types.int64, types.float64), fastmath=True, cache=True)
+def legendre(n, x):
+    """
+    Legendre polynomial P_n(x), n >= 0, |x| <= 1 recommended.
+
+    Recurrence:
+        P_0(x) = 1
+        P_1(x) = x
+        (n+1) P_{n+1}(x) = (2n+1)x P_n(x) - n P_{n-1}(x)
+    """
+    if n < 0:
+        return math.nan
+    if n == 0:
+        return 1.0
+    if n == 1:
+        return x
+
+    Pnm1 = 1.0   # P_0
+    Pn = x       # P_1
+
+    for k in range(1, n):
+        kf = float(k)
+        Pnp1 = ((2.0 * kf + 1.0) * x * Pn - kf * Pnm1) / (kf + 1.0)
+        Pnm1 = Pn
+        Pn = Pnp1
+
+    return Pn
+
 # ---------------------------------------------------------------------------
 # build python function text
 # ---------------------------------------------------------------------------
@@ -383,13 +929,29 @@ NS = {
     "re": re,
     "im": im,
     "pi": np.pi,
-    "np": np,
-    "math": math,
     "max": max,
     "min": min,
     "floor": floor,
     "ceil": ceil,
     "abs_cap": abs_cap,
+    "np": np,
+    "j0s": j0s,
+    "j0": j0,
+    "j1": j1,
+    "i0": i0,
+    "i1": i1,
+    "lgamma": math.lgamma,
+    "airy_ai": airy_ai,
+    "airy_bi": airy_bi,
+    "fresnel_c": fresnel_c,
+    "fresnel_s": fresnel_s,
+    "zeta": zeta,
+    "lambertw": lambertw,
+    "gammainc": gammainc,
+    "dawson": dawson,
+    "legendre": legendre,
+    "math": math,
+    "cmath": cmath,
 }
 
 # 1D forced step + deriv
@@ -1148,6 +1710,108 @@ MAP_TEMPLATES: dict[str, dict] = {
         x0=2.0,
         trans=600,
         iter=600,
+    ),
+
+     "nn10": dict(
+        expr="c*apow(a*cos(2*pi*r*x*x),b*sin(2*pi*r*x))+d",
+        #deriv_expr="0",
+        domain=[-10, -10, 10.0, 10.0], 
+        pardict=dict(
+            r  = "forced",
+            a  = 1.0,
+            b  = 1.0,
+            c  = "x*(1-x)",
+            d = 0.0
+        ),  
+        x0=2.0,
+        trans=600,
+        iter=600,
+    ),
+
+# python lyapunov1.py --spec \
+# 'map:nn11:AB:-10:-10:10:10,
+# c:x*(1-x)*cos(x)*cos(r)*sin(exp(x)),
+# b:1*(cos(x-r))**2+0*cos(x-r),
+# x0:0.5,trans:200,iter:200,
+# rgb:mh_eq:1:seagreen:black:copper,
+# hist:5:5:128' \           
+# --pix 2000 --out tst7.png
+
+    "nn11": dict(
+        expr="a*(b+c)",
+        #deriv_expr="0",
+        domain=[-10, -10, 10.0, 10.0], 
+        pardict=dict(
+            r  = "forced",
+            a  = 1.0,
+            b  = 1.0,
+            c  = "x*(1-x)",
+            d = 0.0
+        ),  
+        x0=2.0,
+        trans=600,
+        iter=600,
+    ),
+
+    # a:cos(2*pi*{0.1:0.4:4}),b:sin(2*pi*${1}*${1}),c:0.2*cos(2*pi*exp(${1})),d:{0.2:0.8:4},e:-0.5*${2},f:0
+     "nn12": dict(
+        expr="term1+term2",
+        #deriv_expr="0",
+        domain=[-10, -10, 10.0, 10.0], 
+        pardict=dict(
+            r  = "forced",
+            a = 0.0, # polynomial coefficients
+            b = 0.0,
+            c = 0.0,
+            d = 1.0,
+            e = 0.0,
+            f = 0.0,
+            v  = "cos(x-r)",
+            term1  = "a*pow(v,5)+b*pow(v,4)+c*pow(v,3)+d*pow(v,2)+e*v+f",
+            term2  = "x*(1-x)*cos(x)*cos(r)*sin(exp(x))",
+        ),  
+        x0=0.5,
+        trans=200,
+        iter=200,
+    ),
+
+     "nn13": dict(
+        expr="final",
+        deriv_expr="0",
+        domain=[-10, -10, 10.0, 10.0], 
+        pardict=dict(
+            r  = "forced",
+            c8 = 1.0,
+            c7 = 1.0, # polynomial coefficients
+            c6 = 1.0, 
+            c5 = 1.0, 
+            c4 = 1.0,
+            c3 = 1.0,
+            c2 = 1.0,
+            c1 = 1.0,
+            c0 = 1.0,
+            v  = "cos(x-r)",
+            poly  = "c8*v**8+c7*v**7+c6*v**6+c5*v**5+c4*v**4+c3*v**3+c2*v**2+c1*v+c0",
+            final = "exp(cos(poly)*sin(poly))",
+        ),  
+        x0=0.5,
+        trans=200,
+        iter=200,
+    ),
+
+
+    "nn14": dict(
+        expr="np.real(m)",
+        deriv_expr="0",
+        domain=[-10, -10, 10.0, 10.0], 
+        pardict=dict(
+            r  = "forced",
+            l  = "r*x*(1-x)",
+            m = "lgamma(l)*j1(l)*j0(l)*sin(l)*cos(l)*np.exp(x+1j*l)",
+        ),  
+        x0=0.5,
+        trans=200,
+        iter=200,
     ),
 
     "eq86": dict(
@@ -3007,6 +3671,28 @@ def sumabschange(hist):
         e += abs(hist[k+1] - hist[k])
     return e
 
+@njit
+def maxratio(hist):
+    hmax = np.max(hist)
+    if hmax==0: return 0.0
+    hmean = np.mean(hist)
+    return float(hmax/hmean)
+
+@njit
+def lrratio(hist):
+    leftsum = np.sum(hist[int(hist.size/2):])
+    if leftsum==0: return 0.0
+    rightsum = np.sum(hist[0:int(hist.size/2)])
+    return float(rightsum/leftsum)
+
+@njit
+def tailratio(hist):
+    tail = int(hist.size/4)
+    tailsum = np.sum(hist[:tail])+np.sum(hist[hist.size-tail:])
+    midsum = np.sum(hist[tail:hist.size-tail])
+    if midsum==0: return 0.0
+    return float(tailsum/midsum)
+
 
 @njit
 def transform_hist(hcalc,hist):
@@ -3017,6 +3703,9 @@ def transform_hist(hcalc,hist):
     elif hcalc==4: return convhist(hist)
     elif hcalc==5: return skewhist(hist)
     elif hcalc==6: return sumabschange(hist)
+    elif hcalc==7: return maxratio(hist)
+    elif hcalc==8: return lrratio(hist)
+    elif hcalc==9: return tailratio(hist)
     return 0.0
 
 
