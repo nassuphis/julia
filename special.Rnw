@@ -1,0 +1,311 @@
+\documentclass{article}
+\usepackage[portrait, headheight = 0cm, margin=0.25cm, top = 0.25cm]{geometry} 
+\usepackage{graphicx}
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{pdfpages}
+\usepackage[export]{adjustbox} 
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{shadings,arrows.meta,positioning,calc,intersections}
+\usepackage{hyperref}
+\usepackage[most]{tcolorbox}
+\usepackage{array} % ensure m{} columns work
+\usepackage{enumitem}  % to control list spacing
+\usepackage{relsize}
+
+<<setup, include=FALSE>>=
+run_code <- FALSE   # or FALSE to disable execution
+@
+
+<<, engine='bash', echo=FALSE, eval=run_code>>=
+python lyapunov1.py --spec \
+'map:nn13:A3B:-10:-10:10:10,c8:0,c7:0,c6:0,c5:0,c4:0,c3:sin(3*r)*cos(2*r),c2:0,c1:sin(r*0.25),c0:0,v:cos(x-r),rgb:mh_eq:1:seagreen:black:copper,hist:3:3:128' \
+--pix 5000 --out nn13_cover.png       
+@
+
+\title{
+\vskip 1cm
+{\bf\huge Orbit NN13}
+\vskip 3cm
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=15cm, height=15cm]{nn13_cover.png}}
+\end{center}
+\vskip 1cm
+}
+\author{Wigerich}
+
+\begin{document}
+\setlength{\fboxsep}{0pt} % no padding
+\maketitle
+
+\newpage
+\tableofcontents
+
+\newpage
+\section{Orbit Equation NN13}
+
+
+\vskip 1cm 
+\noindent Orbit Equation:
+\vskip 1cm 
+
+\begin{center}
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=black,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=2pt,right=2pt,
+    top=12pt,bottom=12pt   % <-- more vertical padding
+]{
+\begin{align}
+v_n &= \cos(x_n - r), \\[0.3em]
+p_n &= c_8 v_n^8 + c_7 v_n^7 + c_6 v_n^6 + c_5 v_n^5
+       + c_4 v_n^4 + c_3 v_n^3 + c_2 v_n^2 + c_1 v_n + c_0, \\[0.5em]
+x_{n+1} &= \exp\!\bigl(\cos p_n \times \sin p_n\bigr)
+\end{align}
+}
+\end{tcolorbox}
+\end{center}
+
+<<, engine='python', echo=TRUE, eval=FALSE>>=
+pardict=dict(
+    r  = "forced",
+    c8 = 1.0,
+    c7 = 1.0, # polynomial coefficients
+    c6 = 1.0, 
+    c5 = 1.0, 
+    c4 = 1.0,
+    c3 = 1.0,
+    c2 = 1.0,
+    c1 = 1.0,
+    c0 = 1.0,
+    v  = "cos(x-r)",
+    poly  = "c8*v**8+c7*v**7+c6*v**6+c5*v**5+c4*v**4+c3*v**3+c2*v**2+c1*v+c0",
+)
+@
+
+\vskip 1cm 
+\noindent Orbit Equation Parameters:
+\vskip 1cm 
+
+\begin{itemize}
+    \item $\mathlarger{\mathlarger{r}}$, parameter {\tt r}, forced
+    \item $\mathlarger{\mathlarger{x_n}}$, map variable
+    \item domain: \verb|domain=[0.0, 0.0, 10.0, 10.0]|
+    \item initial value: \verb|x0=0.5|
+    \item transient steps: \verb|trans=200|
+    \item iterations: \verb|iter=200|
+\end{itemize}
+
+\vskip 1cm 
+\noindent Orbit Classification:
+\vskip 1cm 
+
+\begin{itemize}
+    \item Spectral Density Entropy
+    \item Ad Hoc Orbit Histogram Functionals
+\end{itemize}
+
+
+\newpage
+\section{Default parameters, Spectral Entropy }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{nn13_default_entropy.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'map:nn13,rgb:mh_eq:1:firebrick:black:sunset,entropy:1' \
+--pix 5000 --out nn13_default_entropy.png --thumb 5000
+@
+\begin{itemize}
+    \item using the {\tt entropy} field generator 
+\end{itemize}
+
+\newpage
+\section{Default parameters, Histogram 6,6,128 }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{nn13_default_hist_6_6.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'map:nn13,rgb:mh_eq:1:firebrick:black:sunset,hist:6:6:128' \
+--pix 5000 --out nn13_default_hist_6_6.png --thumb 5000
+@
+\begin{itemize}
+    \item using the {\tt hist:6:6:128} field generator 
+\end{itemize}
+
+
+\newpage
+\section{Location1, Histogram 6,6,128 }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{nn13_loc1_hist_6_6.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'map:nn13,c8:0,c7:0,c6:0,c5:0,c4:0,c3:0,c2:0,c1:0,c0:0,c{8:0}:0.1*cos(r),rgb:mh_eq:1:firebrick:black:sunset,hist:5:1:128' \
+--pix 2000 --out nn13_loc1_hist_5_1.png --thumb 5000
+@
+\begin{itemize}
+    \item scan over coefficients, set to $0.1*cos(r)$
+    \item using the {\tt hist:6:6:128} field generator 
+\end{itemize}
+
+\newpage
+\section{Location2, Histogram 5,1,128 }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{nn13_loc2_hist_5_1.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code>>=
+python lyapunov1.py --spec \
+'map:nn13,c8:0,c7:0,c6:0,c5:0,c4:0,c3:0,c2:0,c1:0,c0:0,c{8:0}:0.1*cos(r),rgb:mh_eq:1:firebrick:black:sunset,hist:5:1:128' \
+--pix 1500 --out nn13_loc2_hist_5_1.png --thumb 5000
+@
+\begin{itemize}
+    \item scan over coefficients, set all to 0, one to $0.1*cos(r)$
+    \item using the {\tt hist:5:1:128} field generator 
+\end{itemize}
+
+\newpage
+\section{Location3, Histogram 3,3,128 }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{nn13_loc3_hist_5_1.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code, size="tiny">>=
+python lyapunov1.py --spec \
+'map:nn13,c8:cos(r)*sin(r),c7:5*cos(exp(r)),c6:sin(cos(r)),c5:3,c4:-3,c3:3,c2:-3,c1:r,c0:r*r,rgb:mh_eq:1:firebrick:black:sunset,hist:5:1:128' \
+--pix 5000 --out nn13_loc3_hist_5_1.png --thumb 5000
+@
+\begin{itemize}
+    \item scan over coefficients, set all to 0, one to $0.1*cos(r)$
+    \item using the {\tt hist:5:1:128} field generator 
+\end{itemize}
+
+\newpage
+\section{Location4, Histogram 3,3,128 }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{nn13_loc4_hist_0_0.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code, size="tiny">>=
+python lyapunov1.py --spec \
+'map:nn13:A3B:5:0:10:5,c8:0,c7:0,c6:0,c5:0,c4:0,c3:sin(3*r)*cos(2*r),c2:0,c1:sin(r*0.25),c0:0,v:cos(x-r),rgb:mh_eq:1:seagreen:black:copper,hist:0:0:128' \
+--pix 5000 --out nn13_loc4_hist_0_0.png
+@
+\begin{itemize}
+    \item using the {\tt hist:0:0:128} field generator 
+\end{itemize}
+
+\newpage
+\section{Location5, Histogram 0,0,128 }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{nn13_loc6_hist_0_0.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code, size="tiny">>=
+python lyapunov1.py --spec \
+'map:nn13:A10B10,ll:6.66:3.33,ul:9:3.33,lr:6.66:0,final:sin(r)/(1+cos(sin(r*x*(1-x))*cos(x*x*x)+sin(r*x*x*x*x))),rgb:mh_eq:1:firebrick:black:sunset,hist:0:0:128' \
+--pix 5000 --out nn13_loc6_hist_0_0.png
+@
+\begin{itemize}
+    \item using the {\tt hist:0:0:128} field generator 
+\end{itemize}
+
+
+\newpage
+\section{Location6, Histogram 3,3,128 }
+
+\begin{center}
+\tcbox[
+  enhanced, 
+  boxrule=6pt, 
+  colframe=black, 
+  colback=black,
+  left=0pt,right=0pt,top=0pt,bottom=0pt
+]{\includegraphics[width=18cm,height=18cm]{nn13_loc10_hist.png}}
+Default parameters, Orbit {\tt FFT}, spectrogram entropy
+\end{center}
+
+<<, engine='bash', echo=TRUE, eval=run_code, size="tiny">>=
+python lyapunov1.py --spec \
+'map:nn13:A1B1:-20:-20:20:20,final:np.real(x*(1-x)*math.lgamma(r)*np.exp(x+1j*r)),rgb:palette:greencopper,hist:3:3:128' \
+--pix 5000 --out nn13_loc10_hist.png
+@
+\begin{itemize}
+    \item using the {\tt hist:3:3:128} field generator 
+\end{itemize}
+
+
+\end{document}
